@@ -1,11 +1,14 @@
 Package: epigenomeR
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Comprehensive Toolkit for Epigenomic Data Analysis and Visualization
 Version: 0.1.0
 Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Maintainer: Yanting Hu <yhu157@jh.edu>
+Description: A comprehensive R package for analyzing epigenomic data including ChIP-seq 
+    and CUT&Tag experiments. Provides functions for count matrix processing, quality 
+    control, clustering analysis, differential region identification, motif enrichment, 
+    fragment decomposition, and advanced visualization including heatmaps and scatter 
+    plots. Supports limma-voom pipeline for differential analysis and integrates with 
+    RNA-seq data for multi-omics comparisons.
 Encoding: UTF-8
 LazyData: true
