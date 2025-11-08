@@ -99,6 +99,8 @@ combine_count_matrix <- function(count_matrix, row_cluster_file_path, col_cluste
                     column_title_gp=gpar(fontsize=col_title_fontsize),
                     row_title_rot=0,
                     show_heatmap_legend=TRUE,
+                    clustering_distance_rows = "euclidean",
+                    clustering_method_rows = "complete",
                     heatmap_legend_param = list(
                       title = "Normalized Read Counts",
                       legend_width = ncol(combined_df)/2*unit(5, "mm"),

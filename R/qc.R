@@ -63,3 +63,4 @@ qc <- function(file_paths, filtered_percentile = 0.25, output_path_dir = NULL, s
 
   return (list(all_df = all_df, filtered_df = filtered_df, filtered_crf = filtered_df_vector, total_reads = total_reads))
 }
+

@@ -15,6 +15,11 @@
 # Output: List containing row_letter (LETTERS A,B,C... for row clusters) and col_num (numbers 1,2,3... for column clusters)
 rowcol_km_like_ComplexHeatmap <- function(mat, row_k, col_k, seed = 42, row_repeats = 1, col_repeats = 1, cluster_row_slices = TRUE, cluster_col_slices = TRUE, distance_method_for_slices = "euclidean", hclust_method_for_slices = "complete", do_reorder_rows = TRUE, reorder_rows_weight = NULL) {
 
+  if ("pos" %in% colnames(mat)) {
+    mat <- mat %>% tibble::column_to_rownames("pos")
+    mat <- as.matrix(mat)
+  }
+
   stopifnot(is.matrix(mat), is.numeric(mat))
   if (is.null(rownames(mat))) rownames(mat) <- sprintf("row_%d", seq_len(nrow(mat)))
   if (is.null(colnames(mat))) colnames(mat) <- sprintf("col_%d", seq_len(ncol(mat)))

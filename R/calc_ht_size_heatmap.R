@@ -1,3 +1,8 @@
+# Post: Dynamically calculate the optimal width and height (in inches) for a heatmap based on the matrix dimensions and axis label sizes.
+# Parameter: mat: A matrix with rownames and colnames, representing the heatmap data.
+#            cell_width: Desired width of each cell in inches (default = 0.5).
+#            cell_height: Desired height of each cell in inches (default = 0.5).
+# Output: A numeric vector of length 2: c(heatmap_width_in_inches, heatmap_height_in_inches).
 calc_ht_size_heatmap <- function(mat, cell_width = 0.5, cell_height = 0.5) {
   if (is.null(rownames(mat)) || is.null(colnames(mat))) {
     stop("Matrix must have rownames and colnames!")

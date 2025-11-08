@@ -4,9 +4,9 @@
 #            filtered_percentile: Percentile threshold for quality control filtering (default: 0.25, removes bottom 25%)
 #            dens_reso: Resolution for kernel density estimation in valley detection (default: 2^15)
 #            target_pair_mapping_df: Optional data frame for mapping sample names to display names (default: NULL)
-#            frag_decomp_file: Output parameter - path to generated fragment decomposition file
+#            frag_decomp_file: Output parameter - path to generated fragment decomposition file, auto-generated
 # Output: Generates comprehensive fragment analysis including histograms, valley detection, summary statistics, and bar plots; saves all results to specified directory
-frag_decomposition <- function(file_path, save_dir, filtered_percentile = 0.25, dens_reso = 2^15, target_pair_mapping_df = NULL, frag_decomp_file) {
+frag_decomposition <- function(file_path, save_dir, filtered_percentile = 0.25, dens_reso = 2^15, target_pair_mapping_df = NULL, density_kernel = "gaussian", valley1_range = c(73, 221), valley2_range = c(222, 368)) {
   # load library
   suppressPackageStartupMessages({
     library(GenomicAlignments)
@@ -29,7 +29,7 @@ frag_decomposition <- function(file_path, save_dir, filtered_percentile = 0.25, 
   result <- reads_hist(reads_vector = bamWidths, save_dir = save_dir, save_name = "premerge_frag_hist.pdf")
 
   # find two loca minimum
-  local_min_val <- find_two_global_valleys(y = bamWidths, dens_reso = dens_reso)
+  local_min_val <- find_two_global_valleys(y = bamWidths, dens_reso = dens_reso, density_kernel = density_kernel, valley1_range = valley1_range, valley2_range = valley2_range)
 
   summary_report <- data.frame(local_min1 = local_min_val[1], local_min2 = local_min_val[2], min_frag_len = min(bamWidths), max_frag_len = max(bamWidths))
   write.csv(summary_report, file.path(save_dir, "summary_report.csv"), row.names = FALSE)
