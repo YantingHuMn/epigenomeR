@@ -1,10 +1,13 @@
 # differential -2
-# Post: Generate differential expression heatmaps for multiple sample clusters, visualizing log2 expression patterns across conditions with customizable formatting and clustering options.
+# Post: Generate differential expression heatmaps for significant regions by reading pre-computed log2-transformed expression matrices, visualizing expression patterns across conditions with customizable formatting and clustering options.
 # Parameter: sample_names: Vector of sample names to be displayed as column titles and used for data organization
-#            col_cluster_file: Path to TSV file containing column cluster assignments with 'feature' column
-#            wgc_file_path: Vector of paths to feather files containing expression matrices, or NULL to use default paths
+#            load_dir: Directory containing log2-transformed expression matrix feather files from limma_column_cluster_differential_regions
 #            sig_result_dir: Output directory path where heatmap PDF files will be saved
-#            cluster_idx_list: Vector of cluster indices to process (default: c(1:8, 10:15))
+#            col_cluster_file: Path to TSV file containing column cluster assignments with 'feature' and 'label' columns (default: NULL, treat each col as a cluster)
+#            cluster_idx_list: Vector of cluster indices to process (default: NULL, uses all unique labels from col_cluster_file)
+#            mean_per_thres: Mean expression percentile threshold used in differential analysis (default: "0.25")
+#            fdr_thres: FDR threshold used in differential analysis (default: "0.25")
+#            l2fc_thres: Log2 fold change threshold used in differential analysis (default: 0.5)
 #            show_heatmap_legend: Whether to display heatmap legend ("on"/"off", default: "off")
 #            show_colnames: Whether to display column names ("on"/"off", default: "off")
 #            col_size_coef: Coefficient for adjusting column width (default: 20)
@@ -12,9 +15,9 @@
 #            width_base: Base width in mm for heatmap sizing (default: 8)
 #            random_seed: Random seed for reproducible raster rendering (default: 42)
 #            font_size: Font size for various text elements (default: 50)
-#            target_pair_mapping_df_path: Path to target name mapping file, or NULL for no mapping
+#            target_pair_mapping_df_path: Path to target name mapping file, or NULL for no mapping (default: NULL)
 # Output: Saves PDF heatmap files for each cluster showing log2 expression values with blue-white-red color scheme, organized by sample groups
-plot_diff_heatmaps <- function(sample_names, sig_result_dir, col_cluster_file = NULL, wgc_file_path = NULL, cluster_idx_list = NULL, show_heatmap_legend = "off", show_colnames = "off", col_size_coef = 20, colnames_fontsize = 10, width_base = 8, random_seed = 42, font_size = 50, target_pair_mapping_df_path = NULL) {
+plot_diff_heatmaps <- function(sample_names, load_dir, sig_result_dir, col_cluster_file = NULL, cluster_idx_list = NULL, show_heatmap_legend = "off", show_colnames = "off", col_size_coef = 20, colnames_fontsize = 10, width_base = 8, random_seed = 42, font_size = 50, target_pair_mapping_df_path = NULL, mean_per_thres = "0.25", fdr_thres = "0.25", l2fc_thres = 0.5) {
 
   # Load libraries
   suppressPackageStartupMessages({
@@ -52,25 +55,8 @@ plot_diff_heatmaps <- function(sample_names, sig_result_dir, col_cluster_file = 
   }
 
   for (cluster_idx in cluster_idx_list) {
-
-    current_wgc_file_path <- if (is.null(wgc_file_path)) {
-      paths <- c(
-        glue("/dcs05/hongkai/data/next_cutntag/bulk/df_analysis/800/column_cluster_wgc/V1_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-0.25_log2_column_cluster-{cluster_idx}_limma_FDR-0.25_logFC-0.5.feather"),
-        glue("/dcs05/hongkai/data/next_cutntag/bulk/df_analysis/800/column_cluster_wgc/V2_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-0.25_log2_column_cluster-{cluster_idx}_limma_FDR-0.25_logFC-0.5.feather"),
-        glue("/dcs05/hongkai/data/next_cutntag/bulk/df_analysis/800/column_cluster_wgc/T1_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-0.25_log2_column_cluster-{cluster_idx}_limma_FDR-0.25_logFC-0.5.feather"),
-        glue("/dcs05/hongkai/data/next_cutntag/bulk/df_analysis/800/column_cluster_wgc/T2_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-0.25_log2_column_cluster-{cluster_idx}_limma_FDR-0.25_logFC-0.5.feather")
-      )
-      missing_files <- paths[!file.exists(paths)]
-      if (length(missing_files) > 0) {
-        stop(glue("Missing WGC feather files for cluster {cluster_idx}: \n{paste(missing_files, collapse='\n')}"))
-      }
-
-      paths
-    } else {
-      wgc_file_path
-    }
-
-    wgc_list <- lapply(current_wgc_file_path, function(f) {
+    wgc_file_path <- glue("{load_dir}/{sample_names}_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-{mean_per_thres}_log2_column_cluster-{cluster_idx}_limma_FDR-{fdr_thres}_logFC-{l2fc_thres}.feather")
+    wgc_list <- lapply(wgc_file_path, function(f) {
       df <- column_to_rownames(read_feather(f), var = "pos")
       colnames(df) <- map_target_names(colnames(df), target_pair_mapping_df_path = target_pair_mapping_df_path)
       df
@@ -97,7 +83,7 @@ plot_diff_heatmaps <- function(sample_names, sig_result_dir, col_cluster_file = 
 
     col_fun <- colorRamp2(c(min(wgc_log2_cbind), 0.9, 1.8), c("#3155C3", "white", "#AF0525"))
 
-    show_colnames_bool <- show_colnames == "on"
+    show_colnames_bool <- (show_colnames == "on")
 
     heatmap_prefix <- glue("diff_heatmap_col_cluster-{cluster_idx}_colname-{show_colnames}_col-reorder_size-{col_size_coef}")
     col_num <- ncol(wgc_log2_cbind)
@@ -129,7 +115,7 @@ plot_diff_heatmaps <- function(sample_names, sig_result_dir, col_cluster_file = 
                   ),
                   use_raster = TRUE
     )
-
+    set.seed(random_seed)
     size <- calc_ht_size1(ht, unit = "inch", show_annotation_legend = FALSE)
 
     # save

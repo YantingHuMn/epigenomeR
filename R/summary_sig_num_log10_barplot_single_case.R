@@ -1,9 +1,12 @@
 # differential -5
 # Post: Generate log10-scaled barplot visualization of significant region counts showing upregulated and downregulated regions across column clusters with original count labels and pseudo-log transformation for better visualization of wide dynamic ranges.
-# Parameter: result_file_path: Path to TSV file containing summary statistics with columns 'column_cluster', 'up', and 'down' (output from summary_sig_num function)
+# Parameter: result_file_dir: Directory containing TSV file with summary statistics (columns 'column_cluster', 'up', 'down' from summary_sig_num function)
 #            sig_result_dir: Output directory where the barplot PDF will be saved
-# Output: Saves PDF barplot with log10-transformed y-axis showing upregulated regions (red, positive) and downregulated regions (blue, negative) for each column cluster, with original count values as text labels and pseudo-log scale for enhanced readability.
-summary_sig_num_log10_barplot_single_case <- function(result_file_path, sig_result_dir) {
+#            mean_per_thres: Mean expression percentile threshold used in summary file name (default: "0.25")
+#            fdr_thres: FDR threshold used in summary file name (default: "0.25")
+#            l2fc_thres: Log2 fold change threshold used in summary file name (default: 0.5)
+# Output: Saves PDF barplot with log10-transformed y-axis showing upregulated regions (red, positive) and downregulated regions (blue, negative) for each column cluster, with original count values as text labels and pseudo-log scale for enhanced readability
+summary_sig_num_log10_barplot_single_case <- function(result_file_dir, sig_result_dir, mean_per_thres = "0.25", fdr_thres = "0.25", l2fc_thres = 0.5) {
   # load libraries
   suppressPackageStartupMessages({
     library(glue)
@@ -11,6 +14,8 @@ summary_sig_num_log10_barplot_single_case <- function(result_file_path, sig_resu
     library(tidyr)
     library(ggplot2)
   })
+
+  result_file_path <- glue("{result_file_dir}/summary_sig_num_{mean_per_thres}_FDR-{fdr_thres}_log2FC-{l2fc_thres}.tsv")
 
   dir.create(sig_result_dir, recursive = TRUE, showWarnings = FALSE)
 

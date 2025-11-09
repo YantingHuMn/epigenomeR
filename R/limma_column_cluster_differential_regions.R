@@ -1,3 +1,4 @@
+# Differential Analysis
 # differential -1
 # two condition, 4 columns
 # Post: Perform differential analysis between two conditions using limma-voom pipeline, analyzing each column cluster separately to identify significantly different genomic regions.
@@ -14,8 +15,8 @@
 #            mean_per_thres_list: Vector of mean expression percentile thresholds for filtering (default: c(0.25))
 #            fdr_thres_list: Vector of FDR thresholds for significance calling (default: c(0.25))
 # Output: Saves differential analysis results, filtered count matrices, and significant regions for each cluster and threshold combination
-limma_column_cluster_differential_regions <- function(sample_names, case_num, control_num, wgc_file_path, sig_result_dir, col_cluster_file = NULL, normalization_factor = 1E6, lowess_span = 0.5, l2fc_thres = 0.5, mean_per_thres_list = c(0.25), fdr_thres_list = c(0.25)) { # cluster
-
+limma_column_cluster_differential_regions <- function(sample_names, case_num, control_num, wgc_file_path, sig_result_dir, col_cluster_file = NULL, normalization_factor = 1E6, lowess_span = 0.5, l2fc_thres = 0.5, mean_per_thres_list = c(0.25), fdr_thres_list = c(0.25), pseudocount_for_log = 1) { # cluster
+  dir.create(sig_result_dir, recursive = TRUE, showWarnings = FALSE)
   if(case_num < 2 || control_num < 2){
     stop("Each condition must have at least 2 replicates.")
   }
@@ -93,8 +94,6 @@ limma_column_cluster_differential_regions <- function(sample_names, case_num, co
     warning("col_cluster file contains ", length(cluster_not_in_wgc), " feature(s) not found in WGC files")
   }
 
-  dir.create(sig_result_dir, recursive = TRUE, showWarnings = FALSE)
-
   # Loop over column clusters
   col_cluster <- col_cluster[col_cluster$feature %in% wgc_cols, ]
   col_label_list <- unique(col_cluster$label)
@@ -133,7 +132,7 @@ limma_column_cluster_differential_regions <- function(sample_names, case_num, co
     effect_libsize <- norm_info$lib.size * norm_info$norm.factors
 
     # voom (mean-variance plot)
-    voom_plot_filename <- glue("{sig_result_dir}/voom_plot_col_cluster-{col_label}.pdf")
+    voom_plot_filename <- glue("{sig_result_dir}/voom_plot_lowess_span-{lowess_span}_post-filter-one_condition_nonzero-2_column_cluster-{col_label}.pdf")
     pdf(voom_plot_filename)
     y <- voom(d, mm, span = lowess_span, plot = TRUE)
     dev.off()
@@ -158,31 +157,67 @@ limma_column_cluster_differential_regions <- function(sample_names, case_num, co
     for (mean_per_thres in mean_per_thres_list) {
       tmp_combine_filtered <- tmp_combine[mean_log2_cpm >= quantile(mean_log2_cpm, mean_per_thres), ]
 
-      # Save filtered count matrix
-      # double filter
-      filtered_matrix_filename <- glue("{sig_result_dir}/filtered_counts_col_cluster-{col_label}_rowmean-{mean_per_thres}.feather")
-      write_feather(rownames_to_column(as.data.frame(tmp_combine_filtered), var = "pos"), filtered_matrix_filename)
+      # # Save filtered count matrix
+      # # double filter
+      # filtered_matrix_filename <- glue("{sig_result_dir}/filtered_counts_col_cluster-{col_label}_rowmean-{mean_per_thres}.feather")
+      # write_feather(rownames_to_column(as.data.frame(tmp_combine_filtered), var = "pos"), filtered_matrix_filename)
 
       # Re-fit with filtered
       d0_filtered <- DGEList(tmp_combine_filtered)
       d_filtered <- calcNormFactors(d0_filtered)
-      y_filtered <- voom(d_filtered, mm, span = lowess_span, plot = FALSE)
+
+      filtered_voom_plot_filename = glue("{sig_result_dir}/voom_plot_lowess_span-{lowess_span}_post-filter-one_condition_nonzero-2_rowmean-{mean_per_thres}_column_cluster-{col_label}.pdf")
+      pdf(filtered_voom_plot_filename)
+      y_filtered <- voom(d_filtered, mm, span = lowess_span, plot = TRUE)
+      dev.off()
+      E_value_filtered = y_filtered$E
+
       fit <- lmFit(y_filtered, mm)
       contr <- makeContrasts(groupcondition2 - groupcondition1, levels = colnames(coef(fit)))
       tmp <- contrasts.fit(fit, contr)
       tmp <- eBayes(tmp)
       top.table <- topTable(tmp, sort.by = "P", n = Inf)
 
+      # save the variance histogram
+      E_value_filtered_var = rowVars(E_value_filtered)
+      var_hist_dir_filename = glue("{sig_result_dir}/hist_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-{mean_per_thres}_column_cluster-{col_label}_for_limma.pdf")
+      pdf(var_hist_dir_filename)
+      hist(E_value_filtered_var, breaks=100, main=glue("filter: {mean_per_thres}, col cluster: {col_label}\nregion #: {nrow(E_value_filtered)}, dof: {unique(tmp$df.total)}"), xlab="Variance", col="blue", border=FALSE)
+      dev.off()
+
+      # Plot two histograms
+      top.table$P.Value[top.table$P.Value == 0] = 1E-300
+      top.table$adj.P.Val[top.table$adj.P.Val == 0] = 1E-300
+      p_list = -log10(top.table$P.Value)
+      fdr_list = -log10(top.table$adj.P.Val)
+
       # Save full table for this threshold
       # significant count matrix
-      top.table_all <- rownames_to_column(top.table, var = "pos")
-      write_feather(top.table_all, glue("{sig_result_dir}/all_regions_rowmean-{mean_per_thres}_col_cluster-{col_label}.feather"))
+      top.table_for_save = rownames_to_column(top.table, var = "pos")
+      top.table_for_save_dir_filename = glue("{sig_result_dir}/result_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-{mean_per_thres}_column_cluster-{col_label}_limma.feather")
+      write_feather(top.table_for_save, top.table_for_save_dir_filename)
 
       # Save significant regions for each FDR threshold
       for (fdr_thres in fdr_thres_list) {
         top.table_sig <- top.table[(top.table$adj.P.Val < fdr_thres) & (abs(top.table$logFC) > l2fc_thres), ]
-        top.table_sig_filename <- glue("{sig_result_dir}/sig_regions_rowmean-{mean_per_thres}_FDR-{fdr_thres}_col_cluster-{col_label}.tsv")
-        write.table(top.table_sig, top.table_sig_filename, sep = "\t", quote = FALSE, row.names = TRUE, col.names = NA)
+        sig_region_num = nrow(top.table_sig)
+        if (sig_region_num == 0) {
+          print(glue("Will not save for cluster {col_label}!"))
+        } else if (sig_region_num > 0) {
+          top.table_sig_filename <- glue("{sig_result_dir}/result_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-{mean_per_thres}_column_cluster-{col_label}_limma_FDR.tsv")
+          write.table(top.table_sig, top.table_sig_filename, sep = "\t", quote = FALSE, row.names = TRUE, col.names = NA)
+          sig_region_list = rownames(top.table_sig)
+
+          for (sample_name in sample_names) {
+            wgc_orig_select_pre <- wgc_list[[sample_name]][, target_pair_select_list]
+            wgc_orig_select <- wgc_orig_select_pre[sig_region_list, target_pair_select_list]
+            wgc_log2_select <- log2(wgc_orig_select + pseudocount_for_log)
+            wgc_log2_select <- rownames_to_column(wgc_log2_select, var = "pos")
+            wgc_log2_select_filename <- glue("{sample_name}_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-{mean_per_thres}_log2_column_cluster-{col_label}_limma_FDR-{fdr_thres}_logFC-{l2fc_thres}.feather")
+            wgc_log2_select_dir_filename <- file.path(sig_result_dir, wgc_log2_select_filename)
+            write_feather(wgc_log2_select, wgc_log2_select_dir_filename)
+          }
+        }
       }
     }
   }

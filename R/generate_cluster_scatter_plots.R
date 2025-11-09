@@ -52,7 +52,6 @@ generate_cluster_scatter_plots <- function(rnaseq_file_path, promoter_file_path,
 
   for (cluster_id in cluster_idx_list) {
     message(glue("Processing cluster {cluster_id}..."))
-
     file_name <- glue("result_post-limmanorm_post-filter-one_condition_nonzero-2_rowmean-0.25_column_cluster-{cluster_id}_limma.feather")
     file_path <- file.path(load_dir, file_name)
     pc <- read_feather(file_path)
@@ -78,8 +77,24 @@ generate_cluster_scatter_plots <- function(rnaseq_file_path, promoter_file_path,
                                      "NaB.1.RNA.seq_S3","NaB.2.RNA.seq_S4",
                                      "veh.1.RNA.seq_S1","veh.2.RNA.seq_S2")])
     overlap_df <- overlap_df[which(overlap_df$padj <= 0.05),]
-
-    df_summarized <- as.data.frame(overlap_df) %>%
+    overlap_df <-
+      overlap_df[, c(
+        "logFC",
+        "adj.P.Val",
+        "genomic_bin_pos",
+        "pos",
+        "gene_id",
+        "gene_name",
+        "log2FoldChange_TPM",
+        "padj",
+        "NaB.1.RNA.seq_S3",
+        "NaB.2.RNA.seq_S4",
+        "veh.1.RNA.seq_S1",
+        "veh.2.RNA.seq_S2"
+      )]
+    df_to_draw <- overlap_df
+    df_to_draw <- df_to_draw[order(df_to_draw$logFC),]
+    df_summarized <- as.data.frame(df_to_draw) %>%
       group_by(gene_id) %>%
       summarise(
         gene_name = first(gene_name),
