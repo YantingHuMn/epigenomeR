@@ -15,21 +15,21 @@
 #            * total_reads.txt
 #         Heatmap in PDF: AAA_test_qc_heatmap.pdf in `output_path_dir`
 all_qc_with_plot <- function(file_paths, filtered_path = NULL, filtered_percentile = 0.25, output_path_dir = NULL, split_crf_by = "-", save = TRUE, group_csv = NULL, tag_names = "tag", category_names = "category", target_pair_mapping_df = NULL) {
-    if (is.null(output_path_dir)) {
-        output_path_dir <- dirname(file_paths[1])
-    }
-    dir.create(output_path_dir, recursive = TRUE, showWarnings = FALSE)
-    
-    result_qc <- qc(file_paths = file_path, filtered_percentile = filtered_percentile, output_path_dir = output_path_dir, save = save)
-    all_df <- result_qc$all_df
+  if (is.null(output_path_dir)) {
+    output_path_dir <- dirname(file_paths[1])
+  }
+  dir.create(output_path_dir, recursive = TRUE, showWarnings = FALSE)
+
+  result_qc <- qc(file_paths = file_path, filtered_percentile = filtered_percentile, output_path_dir = output_path_dir, save = save)
+  all_df <- result_qc$all_df
+  filtered_df <- result_qc$filtered_df
+  filtered_crf <- result_qc$filtered_crf
+  total_reads <- result_qc$total_reads
+  if (!is.null(filtered_path) && all(file.exists(filtered_path))) {
+    result_qc <- qc(file_paths = filtered_path, filtered_percentile = filtered_percentile, output_path_dir = output_path_dir, save = save)
     filtered_df <- result_qc$filtered_df
     filtered_crf <- result_qc$filtered_crf
-    total_reads <- result_qc$total_reads
-    if (!is.null(filtered_path) && all(file.exists(filtered_path))) {
-        result_qc <- qc(file_paths = filtered_path, filtered_percentile = filtered_percentile, output_path_dir = output_path_dir, save = save)
-        filtered_df <- result_qc$filtered_df
-        filtered_crf <- result_qc$filtered_crf
-    }
-    
-    plot_peak_count_heatmap(all_df = all_df, filtered_df = filtered_df, group_csv = group_csv, by = split_crf_by, tag_names = tag_names, category_names = category_names, output_path_dir = output_path_dir, target_pair_mapping_df = target_pair_mapping_df)
+  }
+
+  plot_peak_count_heatmap(all_df = all_df, filtered_df = filtered_df, group_csv = group_csv, by = split_crf_by, tag_names = tag_names, category_names = category_names, output_path_dir = output_path_dir, target_pair_mapping_df = target_pair_mapping_df)
 }

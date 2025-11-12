@@ -7,7 +7,7 @@
 #             category_names: Column name in `group_csv` that holds grouping categories (default = "category").
 #             output_path_dir: Directory to save the output heatmap PDF.
 #             target_pair_mapping_df: (Optional) A mapping data frame to rename row/column names (not used if NULL).
-# Output: PDF file saved to: <output_path_dir>/AAA_test_qc_heatmap.pdf
+# Output: PDF file saved to: <output_path_dir>/test_qc_heatmap.pdf
 plot_peak_count_heatmap <- function(all_df, filtered_df, group_csv = NULL, by = "-", tag_names = "tag", category_names = "category", output_path_dir, target_pair_mapping_df = NULL) {
   # load library
   suppressPackageStartupMessages({
@@ -22,7 +22,7 @@ plot_peak_count_heatmap <- function(all_df, filtered_df, group_csv = NULL, by = 
     if (!dir.exists(output_path_dir)) {
       dir.create(output_path_dir, recursive = TRUE)
     }
-    output_pdf_name <- file.path(output_path_dir, "AAA_test_qc_heatmap.pdf")
+    output_pdf_name <- file.path(output_path_dir, "test_qc_heatmap.pdf")
   }
 
   if (!is.null(group_csv)) {
@@ -86,7 +86,7 @@ plot_peak_count_heatmap <- function(all_df, filtered_df, group_csv = NULL, by = 
     draw(ht, annotation_legend_list = list(na_legend), merge_legend = TRUE)
     dev.off()
   } else {
-    results <- generate_df(all_df_path = all_df_path, filtered_df_path = filtered_df_path, group_csv = group_csv,tag_names = tag_names, category_names = category_names, by = by)
+    results <- generate_df(all_df = all_df, filtered_df = filtered_df, group_csv = group_csv,tag_names = tag_names, category_names = category_names, by = by)
     peak_count_mat <- results$tags_peak_num_mat
 
     # if (!is.null(target_pair_mapping_df)) {

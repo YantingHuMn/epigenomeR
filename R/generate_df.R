@@ -34,7 +34,7 @@ generate_df <- function(all_df, filtered_df, group_csv = NULL, tag_names = "tag"
     colnames(tags_peak_num_mat) <- sub("\\..*$", "", colnames(tags_peak_num_mat))
     rownames(tags_peak_num_mat) <- sub("\\..*$", "", rownames(tags_peak_num_mat))
   } else {
-    tags <- split_crf_pairs_to_single_crf(all_df$file, by = by)
+    tags <- split_crf_pairs_to_single_crf(all_df[[1]], by = by)
     split <- NULL
     category_vector <- NULL
     tags_peak_num_mat <- matrix(0, nrow = length(tags), ncol = length(tags))
@@ -49,7 +49,7 @@ generate_df <- function(all_df, filtered_df, group_csv = NULL, tag_names = "tag"
     pair <- unlist(strsplit(all_df[i, 1], "-"))
     tag1 <- pair[1]
     tag2 <- pair[2]
-    value <- df[i, 2]
+    value <- all_df[i, 2]
 
     if (tag1 %in% tags && tag2 %in% tags) {
       index1 <- which(tags == tag1)
