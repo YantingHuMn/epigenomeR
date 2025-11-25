@@ -1,28 +1,46 @@
-#' @export
+# Post: Annotate and Plot CCRE and ChromHMM Composition for Row Cluster
+# Post: Analyzes genomic annotation composition of clustered regions by overlapping with CCRE and ChromHMM annotations, then generates comparative bar plots showing regulatory element distribution across clusters.
+# Parameter: row_cluster_file_path: Path to row cluster assignment .tsv file with feature positions and cluster labels
+#            output_dir_path: Directory to save annotation plot outputs
+# Output: Generates and saves two bar plot PDF files for CCRE and ChromHMM composition analysis
 biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_path, txdb = NULL) {
+  # load library
+  if (!requireNamespace("cowplot", quietly = TRUE)) {
+    stop("The cowplot package is required but not installed.")
+  }
+
+  if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
+    stop("The GenomicRanges package is required but not installed.")
+  }
+
+  # if (!requireNamespace("RJSONIO", quietly = TRUE)) {
+  #     stop("The RJSONIO package is required but not installed.")
+  # }
+
+  # if (!requireNamespace("rtracklayer", quietly = TRUE)) {
+  #     stop("The rtracklayer package is required but not installed.")
+  # }
 
   suppressPackageStartupMessages({
     library(ggplot2)
     library(cowplot)
     library(GenomicRanges)
     library(glue)
+    #library(RJSONIO)
     library(tidyverse)
+    library(ChIPseeker)
+    library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+    library(tools)
+    library(stringr)
+    library(data.table)
+    #library(rtracklayer)
+    library("dplyr")
+    library(ComplexHeatmap)
+    library(grid)
+    library("gridExtra")
   })
 
-  anno_data <- .get_annotations()
-  annotation <- anno_data$annotation
-  annotation_celltype_agnostic <- anno_data$annotation_celltype_agnostic
-  annotationRepeatMasker <- anno_data$annotationRepeatMasker
-  annotationChromHMM <- anno_data$annotationChromHMM
-  categories <- anno_data$categories
-  categoriesChromHMM <- anno_data$categoriesChromHMM
-  repeatMaskerFeatures <- anno_data$repeatMaskerFeatures
-  ChIPSeekerCCRECategoriesOrder <- anno_data$ChIPSeekerCCRECategoriesOrder
-
-  if (is.null(txdb)) {
-    txdb <- anno_data$txdb
-  }
-
+  # split pos
   biclustering_result <- read.table(row_cluster_file_path, header = TRUE, sep = "\t")
   biclustering_result <- biclustering_result[!biclustering_result$label %in% c("Epitope_Specific", "Background"), ]
   pos_df <- do.call(rbind, (strsplit(biclustering_result$feature, "_")))
@@ -36,11 +54,33 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
     keep.extra.columns = TRUE
   )
 
+  # To-do: need to check whether use as an input variable
   cluster_all_levels <- c(
     as.character(1:100),
-    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-    "Epitope_Specific", "non-target_specific", "background", "Background"
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "Epitope_Specific",
+    "non-target_specific",
+    "background",
+    "Background"
   )
+
+  if (is.null(txdb)) {
+    txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
+  }
 
   unique_clusters <- sort(unique(biclustering_result$label), method = "radix")
   chipseeker_ccre_annotations <- list()
@@ -49,18 +89,26 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
   chromhmm_short_annotations <- list()
   chromhmm_full_annotations <- list()
   chromhmm_group_annotations <- list()
-
   for (cluster_id in unique_clusters) {
     biclustering_result_i <- biclustering_result[biclustering_result$label == cluster_id, ]
     biclustering_grange_i <- makeGRangesFromDataFrame(biclustering_result_i, seqnames.field = "seqnames", start.field = "start", end.field = "end", keep.extra.columns = TRUE)
-
-    chipseeker_ccre_annotation <- annotatePeakByOverlappingChIPSeekerCCRE(biclustering_grange_i, annotation, categories)
-    chipseeker_ccre_celltype_agnostic_annotation <- annotatePeakByOverlappingChIPSeekerCCRE(biclustering_grange_i, annotation_celltype_agnostic, categories, featureColname="V6")
-    repeatmasker_annotation <- annotatepeakByOverlappingRepeatMasker(biclustering_grange_i, annotationRepeatMasker, repeatMaskerFeatures)
-    chromhmm_short_annotation <- annotatepeakByOverlappingChromHMM(biclustering_grange_i, annotationChromHMM, categoriesChromHMM, featureColname = "V4")
-    chromhmm_full_annotation <- annotatepeakByOverlappingChromHMM(biclustering_grange_i, annotationChromHMM, unique(annotationChromHMM$full_anno), featureColname = "full_anno")
-    chromhmm_group_annotation <- annotatepeakByOverlappingChromHMM(biclustering_grange_i, annotationChromHMM, unique(annotationChromHMM$group), featureColname = "group")
-
+    #####
+    datasets <- c("annotation_celltype_agnostic", "annotationChromHMM", "repeatMaskerFeatures", "categories", "annotation", "categoriesChromHMM", "ChIPSeekerCCRECategoriesOrder")
+    for (d in datasets) {
+      if (!exists(d)) {
+        data(list = d, package = "epigenomeR")
+      }
+    }
+    annotationRepeatMasker <- getRepeatMaskerAnnotation()
+    annotationRepeatMasker <- getRepeatMaskerAnnotation()
+    #####
+    chipseeker_ccre_annotation <- annotatePeakByOverlappingChIPSeekerCCRE(peak = biclustering_grange_i, annotation = annotation, categories = categories, txdb = txdb)
+    chipseeker_ccre_celltype_agnostic_annotation <- annotatePeakByOverlappingChIPSeekerCCRE(peak = biclustering_grange_i, annotation = annotation_celltype_agnostic, categories = categories, featureColname="V6", txdb = txdb)
+    repeatmasker_annotation <- annotatepeakByOverlappingRepeatMasker(peak = biclustering_grange_i, annotation = annotationRepeatMasker, categories = repeatMaskerFeatures, txdb = txdb)
+    #####
+    chromhmm_short_annotation <- annotatepeakByOverlappingChromHMM(peak = biclustering_grange_i, annotation = annotationChromHMM, categoriesChromHMM = categoriesChromHMM, featureColname = "V4")
+    chromhmm_full_annotation <- annotatepeakByOverlappingChromHMM(peak = biclustering_grange_i, annotation = annotationChromHMM, categoriesChromHMM = unique(annotationChromHMM$full_anno), featureColname = "full_anno")
+    chromhmm_group_annotation <- annotatepeakByOverlappingChromHMM(peak = biclustering_grange_i, annotation = annotationChromHMM, categoriesChromHMM = unique(annotationChromHMM$group), featureColname = "group")
     chipseeker_ccre_annotations[[glue("{cluster_id}")]] <- chipseeker_ccre_annotation
     repeatmasker_annotations[[glue("{cluster_id}")]] <- repeatmasker_annotation
     chromhmm_short_annotations[[glue("{cluster_id}")]] <- chromhmm_short_annotation
@@ -69,6 +117,7 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
     chipseeker_ccre_celltype_agnostic_annotations[[glue("{cluster_id}")]] <- chipseeker_ccre_celltype_agnostic_annotation
   }
 
+  # plotting chipseeker + ccre
   anno_ccre <- lapply(chipseeker_ccre_celltype_agnostic_annotations, getAnnoStatCCRE)
   anno_ccre.df <- list_to_dataframe(anno_ccre)
   anno_ccre.df$Feature <- factor(anno_ccre.df$Feature, levels = c(ChIPSeekerCCRECategoriesOrder))
@@ -76,7 +125,7 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
 
   cluster_levels <- cluster_all_levels[cluster_all_levels %in% unique(biclustering_result$label)]
   anno_ccre.df$.id <- factor(anno_ccre.df$.id, levels = rev(cluster_levels))
-
+  print(anno_ccre.df$.id)
   p_ccre_agnostic <- plotAnnoBar.data.frame.one.target(anno_ccre.df,
                                                        categoryColumn = categoryColumn,
                                                        colorOption = 1,
@@ -92,12 +141,14 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
     ggtitle("Cis-regulatory Elements (cell type agnostic)") +
     guides(fill = guide_legend(title = NULL, ncol = 1, reverse = TRUE))
 
+
+  # plotting chromhmm
   anno_chromhmm_short <- lapply(chromhmm_short_annotations, getAnnoStatCCRE)
   anno_chromhmm_short.df <- list_to_dataframe(anno_chromhmm_short)
   anno_chromhmm_short.df$Feature <- factor(anno_chromhmm_short.df$Feature, levels = c(unique(annotationChromHMM$V4), "other"))
   categoryColumn <- ".id"
   anno_chromhmm_short.df$.id <- factor(anno_chromhmm_short.df$.id, levels = rev(cluster_levels))
-
+  print(anno_chromhmm_short.df$.id)
   p_chromhmm_short <- plotAnnoBar.data.frame.one.target(anno_chromhmm_short.df,
                                                         categoryColumn = categoryColumn,
                                                         colorOption = 6,
@@ -113,6 +164,7 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
     ggtitle("ChromHMM Elements") +
     guides(fill = guide_legend(title = NULL, ncol = 1, reverse = TRUE))
 
+  # save
   if (!dir.exists(output_dir_path)) {
     dir.create(output_dir_path, recursive = TRUE, showWarnings = FALSE)
   }
