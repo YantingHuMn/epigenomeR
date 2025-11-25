@@ -88,13 +88,14 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
     biclustering_result_i <- biclustering_result[biclustering_result$label == cluster_id, ]
     biclustering_grange_i <- makeGRangesFromDataFrame(biclustering_result_i, seqnames.field = "seqnames", start.field = "start", end.field = "end", keep.extra.columns = TRUE)
     #####
-    datasets <- c("annotation_celltype_agnostic", "annotationChromHMM", "repeatMaskerFeatures", "categories", "annotation", "categoriesChromHMM", "ChIPSeekerCCRECategoriesOrder")
-    for (d in datasets) {
-      if (!exists(d)) {
-        data(list = d, package = "epigenomeR")
-      }
-    }
-    options(timeout = 1800)
+    data("annotation", package = "epigenomeR", envir = environment())
+    data("annotation_celltype_agnostic", package = "epigenomeR", envir = environment())
+    data("annotationChromHMM", package = "epigenomeR", envir = environment())
+    data("categories", package = "epigenomeR", envir = environment())
+    data("categoriesChromHMM", package = "epigenomeR", envir = environment())
+    data("repeatMaskerFeatures", package = "epigenomeR", envir = environment())
+    data("ChIPSeekerCCRECategoriesOrder", package = "epigenomeR", envir = environment())
+
     annotationRepeatMasker <- epigenomeR::getRepeatMaskerAnnotation()
     annotationRepeatMasker <- epigenomeR::getRepeatMaskerAnnotation()
     #####
