@@ -101,7 +101,7 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
     #####
     chipseeker_ccre_annotation <- annotatePeakByOverlappingChIPSeekerCCRE(peak = biclustering_grange_i, annotation = annotation, categories = categories, txdb = txdb)
     chipseeker_ccre_celltype_agnostic_annotation <- annotatePeakByOverlappingChIPSeekerCCRE(peak = biclustering_grange_i, annotation = annotation_celltype_agnostic, categories = categories, featureColname="V6", txdb = txdb)
-    repeatmasker_annotation <- annotatepeakByOverlappingRepeatMasker(peak = biclustering_grange_i, annotation = annotationRepeatMasker, categories = repeatMaskerFeatures, txdb = txdb)
+    repeatmasker_annotation <- annotatepeakByOverlappingRepeatMasker(peak = biclustering_grange_i, annotation = annotationRepeatMasker, categories = repeatMaskerFeatures)
     #####
     chromhmm_short_annotation <- annotatepeakByOverlappingChromHMM(peak = biclustering_grange_i, annotation = annotationChromHMM, categoriesChromHMM = categoriesChromHMM, featureColname = "V4")
     chromhmm_full_annotation <- annotatepeakByOverlappingChromHMM(peak = biclustering_grange_i, annotation = annotationChromHMM, categoriesChromHMM = unique(annotationChromHMM$full_anno), featureColname = "full_anno")
