@@ -48,7 +48,8 @@ annotatePeakByOverlappingClosestFeature <- function(peak, annotation, categories
   otherLength <- length(peak)-sum(peakCategoriesTable)
   peakFreq <- c(unname(peakCategoriesTable), otherLength) / length(peak) * 100
   res <- data.frame(Feature=c(names(peakCategoriesTable), "other"), Frequency = peakFreq)
-  x <- new("csCCREAnno", annoStat = res, peakNum=length(peak))
+  #x <- new("csCCREAnno", annoStat = res, peakNum=length(peak))
+  x <- new("csCCREAnno", annoStat = res, peakNum = length(peak), anno = peak)
   return(x)
 }
 
