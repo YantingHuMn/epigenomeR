@@ -18,12 +18,22 @@ getRepeatMaskerAnnotation <- function(cache_dir = tools::R_user_dir("epigenomeR"
     } else {
       message("Downloading RepeatMasker annotation (first time only, ~185MB)...")
 
+      old_timeout <- getOption("timeout")
+      options(timeout = 1800)
+
       # downlaod
       url <- "https://www.repeatmasker.org/genomes/hg38/rmsk4.0.5_rb20140131/hg38.fa.out.gz"
       temp_file <- tempfile(fileext = ".out.gz")
-      download.file(url, temp_file, mode = "wb")
 
-      # 用你原来的处理方法
+      tryCatch({
+        download.file(url, temp_file, mode = "wb")
+      }, error = function(e) {
+        options(timeout = old_timeout)
+        stop("Download failed. Please check your internet connection and try again.")
+      })
+
+      options(timeout = old_timeout)
+
       lines <- readLines(gzfile(temp_file))
       lines <- stringr::str_trim(lines[4:length(lines)], "left")
       annotationRepeatMasker <- data.frame(stringr::str_split(lines, "\\s+", simplify = TRUE))
