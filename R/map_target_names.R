@@ -1,6 +1,13 @@
 map_target_names <- function(target_pair_list, target_pair_mapping_df_path = NULL, from = "targets", to = "shorthand" ) {
+
   if (is.null(target_pair_mapping_df_path)) {
-    target_pair_mapping_df_path <- target_pair_short_hand
+    datasets <- c("target_pair_mapping_df_path")
+    for (d in datasets) {
+      if (!exists(d)) {
+        data(list = d, package = "epigenomeR")
+      }
+    }
+    target_pair_mapping_df_path <- target_pair_mapping_df_path
   }
 
   target_pair_mapping_df <- read.table(target_pair_mapping_df_path, header = TRUE, check.names = FALSE)
