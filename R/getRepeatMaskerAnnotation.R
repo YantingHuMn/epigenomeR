@@ -1,15 +1,8 @@
 .pkgEnv <- new.env(parent = emptyenv())
 
-#' Get RepeatMasker Annotation
-#'
-#' @param cache_dir Cache directory path
-#' @return GRanges object with RepeatMasker annotation
 #' @export
-#'
 getRepeatMaskerAnnotation <- function(cache_dir = tools::R_user_dir("epigenomeR", "cache")) {
-
   if (is.null(.pkgEnv$annotationRepeatMasker)) {
-
     cache_file <- file.path(cache_dir, "annotationRepeatMasker.rds")
 
     if (file.exists(cache_file)) {
@@ -17,34 +10,22 @@ getRepeatMaskerAnnotation <- function(cache_dir = tools::R_user_dir("epigenomeR"
       .pkgEnv$annotationRepeatMasker <- readRDS(cache_file)
     } else {
       message("Downloading RepeatMasker annotation (first time only, ~185MB)...")
+      message("This may take 5-10 minutes...")
 
-      old_timeout <- getOption("timeout")
-      options(timeout = 1800)
-
-      # downlaod
       url <- "https://www.repeatmasker.org/genomes/hg38/rmsk4.0.5_rb20140131/hg38.fa.out.gz"
       temp_file <- tempfile(fileext = ".out.gz")
 
-      tryCatch({
-        download.file(url, temp_file, mode = "wb")
-      }, error = function(e) {
-        options(timeout = old_timeout)
-        stop("Download failed. Please check your internet connection and try again.")
-      })
-
-      options(timeout = old_timeout)
+      curl::curl_download(url, temp_file, quiet = FALSE)
 
       lines <- readLines(gzfile(temp_file))
       lines <- stringr::str_trim(lines[4:length(lines)], "left")
-      annotationRepeatMasker <- data.frame(stringr::str_split(lines, "\\s+", simplify = TRUE))
-      annotationRepeatMasker$X11 <- gsub("\\/.*", "", annotationRepeatMasker$X11)
-      annotationRepeatMasker <- annotationRepeatMasker[!grepl("?", annotationRepeatMasker$X11, fixed = TRUE), ]
+      df <- data.frame(stringr::str_split(lines, "\\s+", simplify = TRUE))
+      df$X11 <- gsub("\\/.*", "", df$X11)
+      df <- df[!grepl("?", df$X11, fixed = TRUE), ]
+
       annotationRepeatMasker <- GenomicRanges::makeGRangesFromDataFrame(
-        annotationRepeatMasker,
-        keep.extra.columns = TRUE,
-        seqnames.field = "X5",
-        start.field = "X6",
-        end.field = "X7"
+        df, keep.extra.columns = TRUE,
+        seqnames.field = "X5", start.field = "X6", end.field = "X7"
       )
 
       dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)

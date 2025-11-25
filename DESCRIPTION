@@ -58,7 +58,8 @@ Imports:
     tidyr,
     tools,
     utils,
-    viridis
+    viridis,
+    curl
 Suggests:
     BiocManager,
     testthat (>= 3.0.0),
