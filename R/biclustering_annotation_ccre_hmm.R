@@ -94,6 +94,7 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
         data(list = d, package = "epigenomeR")
       }
     }
+    options(timeout = 1800)
     annotationRepeatMasker <- epigenomeR::getRepeatMaskerAnnotation()
     annotationRepeatMasker <- epigenomeR::getRepeatMaskerAnnotation()
     #####
