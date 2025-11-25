@@ -1,5 +1,11 @@
 .pkgEnv <- new.env(parent = emptyenv())
 
+#' Get RepeatMasker Annotation
+#'
+#' @param cache_dir Cache directory path
+#' @return GRanges object with RepeatMasker annotation
+#' @export
+#'
 getRepeatMaskerAnnotation <- function(cache_dir = tools::R_user_dir("epigenomeR", "cache")) {
 
   if (is.null(.pkgEnv$annotationRepeatMasker)) {
