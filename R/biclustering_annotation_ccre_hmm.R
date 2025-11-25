@@ -1,8 +1,3 @@
-# Post: Annotate and Plot CCRE and ChromHMM Composition for Row Cluster
-# Post: Analyzes genomic annotation composition of clustered regions by overlapping with CCRE and ChromHMM annotations, then generates comparative bar plots showing regulatory element distribution across clusters.
-# Parameter: row_cluster_file_path: Path to row cluster assignment .tsv file with feature positions and cluster labels
-#            output_dir_path: Directory to save annotation plot outputs
-# Output: Generates and saves two bar plot PDF files for CCRE and ChromHMM composition analysis
 biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_path, txdb = NULL) {
   # load library
   if (!requireNamespace("cowplot", quietly = TRUE)) {
@@ -99,8 +94,8 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
         data(list = d, package = "epigenomeR")
       }
     }
-    annotationRepeatMasker <- getRepeatMaskerAnnotation()
-    annotationRepeatMasker <- getRepeatMaskerAnnotation()
+    annotationRepeatMasker <- epigenomeR::getRepeatMaskerAnnotation()
+    annotationRepeatMasker <- epigenomeR::getRepeatMaskerAnnotation()
     #####
     chipseeker_ccre_annotation <- annotatePeakByOverlappingChIPSeekerCCRE(peak = biclustering_grange_i, annotation = annotation, categories = categories, txdb = txdb)
     chipseeker_ccre_celltype_agnostic_annotation <- annotatePeakByOverlappingChIPSeekerCCRE(peak = biclustering_grange_i, annotation = annotation_celltype_agnostic, categories = categories, featureColname="V6", txdb = txdb)
