@@ -11,14 +11,14 @@
 #            qc_filtered_percentile: Percentile threshold for QC filtering.
 # Output: None (saves count matrix and transformed data to files).
 count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg38", libnorm_type = "libnorm", apply_transformation = TRUE, transformations = NULL, save_each_step = TRUE, datasetName_full = NULL, do_qc = FALSE, qc_filtered_percentile = 0.25) {
-  # Create folder
+    start_time <- Sys.time()
+
+    # Create folder
     if (!dir.exists(save_dir)) {
         dir.create(save_dir, recursive = TRUE)
     }
 
-  # initiate packages
-    start_time <- Sys.time()
-
+    # initiate packages
     suppressPackageStartupMessages({
         library(R.utils)
         library(GenomicAlignments)
@@ -39,7 +39,7 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
     num_cores <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = 1))
     register(MulticoreParam(workers = num_cores))
 
-  # Define Regions
+    # Define Regions
     if (is.numeric(regions)) {
         BINSIZE <- regions
         use_custom_region <- FALSE
@@ -51,7 +51,7 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
         } else if (all(ext == "csv")){
             region_df <- read.csv(region_path, row.names = NULL)
         } else if (all(ext == "bed")) {
-            region_path <- regions
+            region_df <- NULL
         } else {
             stop("Error: Invalid region file format. Only support .csv, .tsv, .txt, .bed")
         }
@@ -60,7 +60,7 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
         stop("Error: Custom regions must be provided. 'regions' argument is missing or invalid.")
     }
 
-  # Variables set
+    # Variables set
     pos_colname = "pos"
     # qc
     if (do_qc == TRUE) {
@@ -70,18 +70,21 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
     } else {
         bamFiles <- bam_path
     }
-
+    
     if (ref == "hg38") {
         refGenome <- BSgenome.Hsapiens.NCBI.GRCh38
-        chrSizes <- seqlengths(refGenome)[1:24]
-        chr_list = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X", "Y")
+        # chrSizes <- seqlengths(refGenome)[1:24]
+        # chr_list = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X", "Y")
     } else if (ref == "mm10") {
         refGenome <- BSgenome.Mmusculus.UCSC.mm10
-        chrSizes <- seqlengths(refGenome)[1:21]
-        chr_list = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", 
-                        "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", 
-                        "chr16", "chr17", "chr18", "chr19", "chrX", "chrY")
+        # chrSizes <- seqlengths(refGenome)[1:21]
+        # chr_list = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", 
+        #                 "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", 
+        #                 "chr16", "chr17", "chr18", "chr19", "chrX", "chrY")
     }
+    chr_list <- GenomeInfoDb::standardChromosomes(refGenome)
+    chr_list <- chr_list[!tolower(chr_list) %in% c("mt", "chrm", "m", "mito")]
+    chrSizes <- seqlengths(refGenome)[chr_list]
 
 
     # Post: Use bplapply for parallel chromosome processing
@@ -91,47 +94,30 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
         ext <- tools::file_ext(region_path)[1]
         
         # Handle CSV/GTF files
-        if (length(region_path) == 1 && all(ext != "bed")) {
-            bin <- GRanges(seqnames = region_df$seqnames,
-                          ranges = IRanges(start = region_df$start, end = region_df$end),
-                          strand = region_df$strand)
+        if (!is.null(region_df)) {
+            region_df <- fix_region_colnames(region_df)
+            bin <- GRanges(seqnames = region_df$seqnames, ranges = IRanges(start = region_df$start, end = region_df$end))
             binChriDataframe <- as.data.frame(bin)[, c("seqnames", "start", "end")]
             colnames(binChriDataframe)[1] <- "CHR"
             
             if (!all(grepl("^chr", seqlevels(bin)))) {
-                seqlevels(bin) <- paste0("chr", seqlevels(bin))
                 binChriDataframe$CHR <- paste0("chr", binChriDataframe$CHR)
             }
-            
             if ("gene_id" %in% colnames(region_df)) {
                 binChriDataframe$gene_id <- region_df$gene_id
             }
         } 
         # Handle BED files
-        else if (length(region_path) >= 1 && all(ext == "bed")) {
+        else {
             gr_list <- lapply(region_path, function(p) {
                 bed_data <- read.table(p, sep = "\t", stringsAsFactors = FALSE)
-                
-                if (ncol(bed_data) < 6) {
-                    bed_data$V6 <- "." 
-                }
-                bed_data$V6[!bed_data$V6 %in% c("+", "-", ".")] <- "*"
-                
-                GRanges(
-                    seqnames = bed_data$V1,
-                    ranges = IRanges(
-                        start = bed_data$V2 + 1,  # BED is 0-based, GRanges is 1-based
-                        end = bed_data$V3
-                    ),
-                    strand = ifelse(bed_data$V6 == ".", "*", bed_data$V6)
-                )
+                GRanges(seqnames = bed_data$V1, ranges = IRanges(start = bed_data$V2 + 1, end = bed_data$V3))
             })
             bin <- reduce(do.call("c", gr_list))
             binChriDataframe <- as.data.frame(bin)[, c("seqnames", "start", "end")]
             colnames(binChriDataframe)[1] <- "CHR"
             
             if (!all(grepl("^chr", seqlevels(bin)))) {
-                seqlevels(bin) <- paste0("chr", seqlevels(bin))
                 binChriDataframe$CHR <- paste0("chr", binChriDataframe$CHR)
             }
         }
