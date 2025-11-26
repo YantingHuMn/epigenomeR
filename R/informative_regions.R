@@ -12,7 +12,6 @@
 informative_regions <- function(input_hypervar_path, input_CRF_orig_path, output_dir_path = NULL, split_num = 100, keep_percent_list = c(0.01), log2mean_quantile_thres = 0.99, plot=FALSE) {
   # load library
   suppressPackageStartupMessages({
-    library(feather)
     library(ggplot2)
     library(dplyr)
     library(reshape2)

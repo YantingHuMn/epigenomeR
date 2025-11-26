@@ -19,22 +19,6 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
   # initiate packages
     start_time <- Sys.time()
 
-    list.of.packages <- c("data.table", "arrow") # libraries from CRAN
-    new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-    if(length(new.packages)) install.packages(new.packages)
-
-    listOfBiocPackages = c("GenomicAlignments", 
-        "GenomicRanges", 
-        "Biostrings", 
-        "BSgenome.Hsapiens.NCBI.GRCh38",
-        "TxDb.Mmusculus.UCSC.mm10.knownGene",
-        "plyranges") # libraries from bioconductor
-    notInstalled <- which(!listOfBiocPackages %in% rownames(installed.packages()))
-
-    if( length(notInstalled) ) {
-        BiocManager::install(listOfBiocPackages[notInstalled])
-    }
-
     suppressPackageStartupMessages({
         library(R.utils)
         library(GenomicAlignments)
@@ -52,7 +36,6 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
         library(rtracklayer)
     })
 
-    library(BiocParallel)
     num_cores <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = 1))
     register(MulticoreParam(workers = num_cores))
 
@@ -60,10 +43,9 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
     if (is.numeric(regions)) {
         BINSIZE <- regions
         use_custom_region <- FALSE
-    }  else if (is.character(regions) && all(file.exists(regions))) {
+    } else if (is.character(regions) && all(file.exists(regions))) {
         region_path <- regions
         ext <- tools::file_ext(region_path)
-
         if (all(ext == "tsv") || all(ext == "txt")) {   
             region_df <- data.table::fread(region_path)
         } else if (all(ext == "csv")){
@@ -71,15 +53,12 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
         } else if (all(ext == "bed")) {
             region_path <- regions
         } else {
-            stop("Error: Invalid BINSIZE.")
+            stop("Error: Invalid region file format. Only support .csv, .tsv, .txt, .bed")
         }
         use_custom_region <- TRUE
-    }
-
-    if (!use_custom_region && !is.numeric(regions)) {
+    } else {
         stop("Error: Custom regions must be provided. 'regions' argument is missing or invalid.")
     }
-
 
   # Variables set
     pos_colname = "pos"
