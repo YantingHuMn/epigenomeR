@@ -85,7 +85,7 @@ combine_count_matrix <- function(count_matrix, row_cluster_file_path, col_cluste
                     column_order=col_order_shorten,
                     column_split=col_split,
                     border=TRUE,
-                    rect_gp = gpar(lwd = 0),
+                    rect_gp = gpar(col = NA, lwd = 0),
                     border_gp = gpar(col = "white", lwd = 0),
                     show_row_names=FALSE,
                     show_column_names = show_dend_boolean,
