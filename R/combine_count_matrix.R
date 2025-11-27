@@ -46,7 +46,7 @@ combine_count_matrix <- function(count_matrix, row_cluster_file_path, col_cluste
     # load col cluster info
     col_cluster = read.table(col_cluster_file_path, header=TRUE, sep="\t", row.names=NULL)
     col_order = col_cluster$feature
-    col_order_shorten = map_target_names(col_cluster$feature, target_pair_mapping_df)
+    col_order_shorten = map_target_names(col_cluster$feature)
 
     # inner_join
     col_order_valid <- intersect(col_order, colnames(count_matrix))
