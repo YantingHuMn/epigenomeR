@@ -109,7 +109,8 @@ combine_count_matrix <- function(count_matrix, row_cluster_file_path, col_cluste
                       title_gp = gpar(fontsize = legend_title_fontsize),
                       labels_gp = gpar(fontsize = legend_label_fontsize),
                       legend_direction = "horizontal"),
-                    column_labels=TeX(colnames(combined_df))
+                    column_labels=TeX(colnames(combined_df)),
+                    use_raster=TRUE
   )
 
   set.seed(seed)
