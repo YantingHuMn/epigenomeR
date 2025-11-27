@@ -1,4 +1,4 @@
-# Count Matrix Function With QC
+# Build Count Matrix Function
 # Post: build count matrix from bam file with pre-specified genomic regions.
 # Parameter: bam_path: A vector of bam file path.
 #            regions: Regions should be either an integer or a (vector of) file path ending with .tsv, .txt, .csv, or .bed.
@@ -10,7 +10,7 @@
 #            do_qc: Whether to perform quality control filtering on BAM files.
 #            qc_filtered_percentile: Percentile threshold for QC filtering.
 # Output: None (saves count matrix and transformed data to files).
-count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg38", libnorm_type = "libnorm", apply_transformation = TRUE, transformations = NULL, save_each_step = TRUE, datasetName_full = NULL, do_qc = FALSE, qc_filtered_percentile = 0.25) {
+build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnorm_type = "libnorm", apply_transformation = TRUE, transformations = NULL, save_each_step = FALSE, datasetName_full = NULL, do_qc = FALSE, qc_filtered_percentile = 0.25, force_chr_coord = FALSE) {
     start_time <- Sys.time()
 
     # Create folder
@@ -177,19 +177,16 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
         has_gene_id <- "gene_id" %in% colnames(binChriDataframe) && 
                all(!is.na(binChriDataframe$gene_id)) &&
                all(binChriDataframe$gene_id != "")
-        if (has_gene_id) {
-            tmp_pos <- binChriDataframe[, c("CHR", "start", "end", "gene_id")]
-            tmp_pos$pos <- tmp_pos$gene_id
-            pos_df <- data.frame(pos = tmp_pos$pos)
-            tmp_wgc <- binChriDataframe[, !(names(binChriDataframe) %in% c("CHR", "start", "end", "gene_id"))]
-            binChriDataframe_full <- cbind(pos_df, tmp_wgc)
+        if (has_gene_id && !force_chr_coord) {
+            pos_vec <- binChriDataframe$gene_id
+            drop_cols <- c("CHR", "start", "end", "gene_id")
         } else {
-            tmp_pos <- binChriDataframe[, c("CHR", "start", "end")]
-            tmp_pos$pos <- paste0(tmp_pos$CHR, "_", tmp_pos$start, "_", tmp_pos$end)
-            pos_df <- data.frame(pos = tmp_pos$pos)
-            tmp_wgc <- binChriDataframe[, !(names(binChriDataframe) %in% c("CHR", "start", "end"))]
-            binChriDataframe_full <- cbind(pos_df, tmp_wgc)
+            pos_vec <- paste0(binChriDataframe$CHR, "_", binChriDataframe$start, "_", binChriDataframe$end)
+            drop_cols <- c("CHR", "start", "end")
         }
+        pos_df <- data.frame(pos = pos_vec)
+        tmp_wgc <- binChriDataframe[, !(names(binChriDataframe) %in% drop_cols), drop = FALSE]
+        binChriDataframe_full <- cbind(pos_df, tmp_wgc)
         
     } else {
         # Get reference genome size
@@ -306,5 +303,4 @@ count_matrix_function_with_qc <- function(bam_path, regions, save_dir, ref = "hg
 
         apply_transformations(df = binChriDataframe_full, libnorm_type1 = libnorm_type, transformations = transformations, save_each_step = save_each_step, save_dir = save_dir, datasetName_full = datasetName_full)
     }
-
 }
