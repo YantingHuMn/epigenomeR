@@ -1,16 +1,19 @@
 # Build Count Matrix Function
-# Post: build count matrix from bam file with pre-specified genomic regions.
-# Parameter: bam_path: A vector of bam file path.
-#            regions: Regions should be either an integer or a (vector of) file path ending with .tsv, .txt, .csv, or .bed.
-#            libnorm_type: Default to "libnorm" for 1E6 normalization.
-#            transformation: Default to "remove0", "libnorm", "log2p1", "qnorm" in order.
-#            save_dir: Folder path for saving output files.
-#            datasetName_full: the file name, default to "Count_matrix" + region type.
-#            save_each_step: Whether save each step, default to TRUE.
-#            do_qc: Whether to perform quality control filtering on BAM files.
-#            qc_filtered_percentile: Percentile threshold for QC filtering.
-# Output: None (saves count matrix and transformed data to files).
-build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnorm_type = "libnorm", apply_transformation = TRUE, transformations = NULL, save_each_step = FALSE, datasetName_full = NULL, do_qc = FALSE, qc_filtered_percentile = 0.25, force_chr_coord = FALSE) {
+# Post: Build a fragment-overlap count matrix from paired-end BAM files over user-specified genomic regions and save it as a Feather file.
+# Parameter: 
+#   bam_path  : Character vector of BAM file paths. Each BAM file becomes one column in the output matrix.
+#   regions   : Either
+#               - a single integer (bin size in bp), e.g. regions = 5000, which tiles the genome into fixed-size bins; or
+#               - a single file path to a BED / TSV / TXT / CSV file containing custom genomic regions.
+#   save_dir  : Directory where the output Feather file will be written. Default "./".
+#   ref_genome: Reference genome used when regions is numeric. One of "hg38" or "mm10". Ignored when custom regions are provided.
+#   sample_name: Optional character. If provided, it is prepended to the output filename.
+#   do_qc     : Whether to perform quality control filtering on BAM files.
+#   qc_percent: Numeric in (0, 1); percentile threshold for filtering low-count BAM files. Default 0.25.
+#   force_chr_coord: When TRUE, region IDs ("pos" column) are always  "CHR_start_end", even if gene_id is available. When FALSE and a non-empty gene_id column exists, gene_id is used as the region identifier.
+# Output: Writes a Feather file whose first column is 'pos' and remaining columns are fragment-overlap counts per BAM file. Returns the full output file path (character).
+
+build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = "hg38", sample_name = NULL, do_qc = FALSE, qc_percent = 0.25, force_chr_coord = FALSE) {
     start_time <- Sys.time()
 
     # Create folder
@@ -43,9 +46,15 @@ build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnor
 
     # Define Regions
     if (is.numeric(regions)) {
+        if (length(regions) != 1) {
+            stop("Error: numeric 'regions' must be a single bin size.")
+        }
         BINSIZE <- regions
         use_custom_region <- FALSE
     } else if (is.character(regions) && all(file.exists(regions))) {
+        if (length(regions)!=1) {
+            stop("Error: Only one region file is allowed. Please provide a merged file.")
+        }
         region_path <- regions
         ext <- tools::file_ext(region_path)
         if (all(ext == "tsv") || all(ext == "txt")) {   
@@ -62,12 +71,9 @@ build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnor
         stop("Error: Custom regions must be provided. 'regions' argument is missing or invalid.")
     }
 
-    # Variables set
-    pos_colname = "pos"
-
     # qc
     if (do_qc == TRUE) {
-        result <- qc(file_paths = bam_path, filtered_percentile = qc_filtered_percentile, save = FALSE)
+        result <- qc(file_paths = bam_path, filtered_percentile = qc_percent, save = FALSE)
         vector_crf <- result$filtered_crf
         bamFiles <- bam_path[tools::file_path_sans_ext(basename(bam_path)) %in% vector_crf]
     } else {
@@ -92,9 +98,7 @@ build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnor
     #       Generate Count Matrix for each chr
     # Process custom regions (no chromosome loop needed)
     if (use_custom_region) {
-        ext <- tools::file_ext(region_path)[1]
-        
-        # Handle CSV/GTF files
+        # Handle CSV/GTF file
         if (!is.null(region_df)) {
             region_df <- fix_region_colnames(region_df)
             bin <- GRanges(seqnames = region_df$seqnames, ranges = IRanges(start = region_df$start, end = region_df$end))
@@ -108,17 +112,13 @@ build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnor
                 binChriDataframe$gene_id <- region_df$gene_id
             }
         } 
-        # Handle BED files
+        # Handle BED file
         else {
-            gr_list <- lapply(region_path, function(p) {
-                bed_data <- read.table(p, sep = "\t", stringsAsFactors = FALSE)
-                gr <- GRanges(seqnames = bed_data$V1, ranges = IRanges(start = bed_data$V2 + 1, end = bed_data$V3))
-                if (ncol(bed_data) >= 4) {
-                    mcols(gr)$gene_id <- bed_data$V4
-                }
-                return(gr)
-            })
-            bin <- do.call("c", gr_list)
+            bed_data <- read.table(region_path, sep = "\t", stringsAsFactors = FALSE)
+            bin <- GRanges(seqnames = bed_data$V1, ranges = IRanges(start = bed_data$V2 + 1, end = bed_data$V3))
+            if (ncol(bed_data) >= 4) {
+                mcols(bin)$gene_id <- bed_data$V4
+            }
             seqlevelsStyle(bin) <- bam_style
             binChriDataframe <- as.data.frame(bin)[, c("seqnames", "start", "end")]
             colnames(binChriDataframe)[1] <- "CHR"
@@ -141,11 +141,11 @@ build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnor
             if (nrow(locus) == 0) {
                 bamContent <- GRanges()
             } else {
-                start <- rowMin(as.matrix(locus))
-                end <- rowMax(as.matrix(locus))
+                frag_start <- rowMin(as.matrix(locus))
+                frag_end <- rowMax(as.matrix(locus))
                 bamContent <- makeGRangesFromDataFrame(data.frame(
                     seqnames = as.vector(seqnames(temp)), strand = "*",
-                    start = start, end = end))
+                    start = frag_start, end = frag_end))
 
                 overlaps <- findOverlaps(bamContent, bin, ignore.strand = TRUE)
                 qh <- queryHits(overlaps)
@@ -190,11 +190,14 @@ build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnor
         
     } else {
         # Get reference genome size
-        if (ref == "hg38") {
+        if (ref_genome == "hg38") {
             refGenome <- BSgenome.Hsapiens.NCBI.GRCh38
-        } else if (ref == "mm10") {
+        } else if (ref_genome == "mm10") {
             refGenome <- BSgenome.Mmusculus.UCSC.mm10
+        } else {
+            stop("Error: 'ref_genome' must be either 'hg38' or 'mm10'.")
         }
+
         seqlevelsStyle(refGenome) <- bam_style
         chr_list <- GenomeInfoDb::standardChromosomes(refGenome)
         chr_list <- chr_list[!tolower(chr_list) %in% c("mt", "chrm", "m", "mito")]
@@ -220,11 +223,11 @@ build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnor
                 if (nrow(locus) == 0) {
                     bamContent <- GRanges()
                 } else {
-                    start <- rowMin(as.matrix(locus))
-                    end <- rowMax(as.matrix(locus))
+                    frag_start <- rowMin(as.matrix(locus))
+                    frag_end <- rowMax(as.matrix(locus))
                     bamContent <- makeGRangesFromDataFrame(data.frame(
                         seqnames = as.vector(seqnames(temp)), strand = "*",
-                        start = start, end = end))
+                        start = frag_start, end = frag_end))
 
                     overlaps <- findOverlaps(bamContent, bin, ignore.strand = TRUE)
                     qh <- queryHits(overlaps)
@@ -265,42 +268,31 @@ build_count_matirx <- function(bam_path, regions, save_dir, ref = "hg38", libnor
         binChriDataframe_full <- as.data.frame(do.call(rbind, binChriDataframe_list))
     }
 
-    if (is.null(datasetName_full)) {
-        if (is.numeric(regions)) {
-            datasetName_full <- paste0("Count_Matrix_", BINSIZE)
-        } else if (is.character(regions)) {
-            ext <- tools::file_ext(regions)
-            add <- ext[1]
-            datasetName_full <- paste0("Count_Matrix_", add)
-        }
+    
+    if (is.numeric(regions)) {
+        filename <- paste0("Count_Matrix_", BINSIZE)
+    } else if (is.character(regions)) {
+        prefix <- basename(tools::file_path_sans_ext(regions))
+        filename <- paste0("Count_Matrix_", prefix[1])
+    }
+    
+    if (is.null(sample_name)) {
+        output_filename <- paste0(filename,'.feather')
+    } else {
+        output_filename <- paste0(sample_name, '_', filename,'.feather')
     }
 
   # Report
-    print(warnings())
-    print(datasetName_full)
-
     preprocess_time <- Sys.time()
     preprocess_time_taken <- round(preprocess_time - start_time, 2)
-    print(c("prepocess time taken: ", preprocess_time_taken))
+    cat("preprocess time taken: ", preprocess_time_taken, "\n")
 
-    datasetName_full_filename = paste0(datasetName_full, "_orig.feather")
-    datasetName_full_dir_filename = file.path(save_dir, datasetName_full_filename)
-    write_feather(binChriDataframe_full, datasetName_full_dir_filename)
+    output_path <- file.path(save_dir, output_filename)
+    write_feather(binChriDataframe_full, output_path)
 
-    saving_time_0 <- Sys.time()
-    saving_time_taken_0 <- round(saving_time_0 - preprocess_time, 2)
-    print(c("saving time original taken: ", saving_time_taken_0))
-
-    col2idx_time <- Sys.time()
-    col2idx_time_taken <- round(col2idx_time - saving_time_0, 2)
-    print(c("col2idx time taken: ", col2idx_time_taken))
-
-  # Transformation
-    if (apply_transformation == TRUE) {
-        rownames(binChriDataframe_full) <- NULL
-        binChriDataframe_full = column_to_rownames(binChriDataframe_full, var=pos_colname)
-        binChriDataframe_full <- binChriDataframe_full
-
-        apply_transformations(df = binChriDataframe_full, libnorm_type1 = libnorm_type, transformations = transformations, save_each_step = save_each_step, save_dir = save_dir, datasetName_full = datasetName_full)
-    }
+    saving_time <- Sys.time()
+    saving_time_taken <- round(saving_time - preprocess_time, 2)
+    cat("saving time original taken: ", saving_time_taken, "\n")
+    cat("Successfully saved to: ", output_path, "\n")
+    return(output_path)
 }
