@@ -8,7 +8,7 @@
 #            motif_lib: Motif library to use - "JASPAR_hg38", "JASPAR_hg19", or "JASPAR_mm10" (default: "JASPAR_hg38")
 #            rds_path: Path to RDS file containing motif library data (default: ChIP-seq TF peaks)
 # Output: A data frame where each row corresponds to a motif with enrichment statistics (odds ratio, p-value, FDR) saved to output_path
-enrich_motif <- function(target_region_path, control_region_path, functional_region_path = NULL, output_path = output_path, region_size = 200, motif_lib = "JASPAR_hg38", rds_path = "/dcs05/hongkai/data/next_cutntag/public_data/ChIPSeq/TFs/peak.rds") {
+enrich_motif <- function(target_region_path, control_region_path, functional_region_path = NULL, output_path = output_path, region_size = 200, motif_lib = "JASPAR_hg38", rds_path = NULL) {
   # load package
   if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
     stop("The GenomicRanges package is required but not installed.")
@@ -26,9 +26,15 @@ enrich_motif <- function(target_region_path, control_region_path, functional_reg
     library(data.table)
     library(dplyr)
     library(glue)
+    library(IRanges)
   })
 
-  motif_lib_hg38 <- readRDS(rds_path)
+  if(!is.null(rds_path)){
+    data("motif_lib_hg38", package = "epigenomeR", envir = environment())
+    motif_lib_hg38 <- motif_lib_hg38
+  } else{
+    motif_lib_hg38 <- readRDS(rds_path)
+  }
 
   target_region <- read.table(target_region_path, sep = "\t")
   control_region <- read.table(control_region_path, sep = "\t")
