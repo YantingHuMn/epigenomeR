@@ -165,7 +165,7 @@ build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = 
                 
                 if (length(sh) > 0) {
                     dt <- data.table(bin_id = sh, prop = proportions)
-                    summed <- dt[, .(total = sum(prop)), by = bin_id]
+                    summed <- dt[, data.table::.(total = sum(prop)), by = bin_id]
                     overlapCount[summed$bin_id] <- summed$total
                 }
             }
@@ -205,6 +205,7 @@ build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = 
 
         # Process fixed bins with parallel chromosome processing
         binChriDataframe_list <- bplapply(chr_list, function(chr_i) {
+            require(data.table)
             chrSizei <- chrSizes[chr_i]
             bin <- tileGenome(chrSizei, tilewidth=BINSIZE, cut.last.tile.in.chrom=TRUE)
             binChriDataframe <- as.data.frame(bin)[, c("start", "end")]
@@ -247,7 +248,7 @@ build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = 
                     
                     if (length(sh) > 0) {
                         dt <- data.table(bin_id = sh, prop = proportions)
-                        summed <- dt[, .(total = sum(prop)), by = bin_id]
+                        summed <- dt[, data.table::.(total = sum(prop)), by = bin_id]
                         overlapCount[summed$bin_id] <- summed$total
                     }
                 }
