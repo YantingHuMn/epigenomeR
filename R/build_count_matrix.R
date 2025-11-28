@@ -165,7 +165,7 @@ build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = 
                 
                 if (length(sh) > 0) {
                     dt <- data.table(bin_id = sh, prop = proportions)
-                    summed <- dt[, data.table::.(total = sum(prop)), by = bin_id]
+                    summed <- dt[, list(total = sum(prop)), by = bin_id]
                     overlapCount[summed$bin_id] <- summed$total
                 }
             }
@@ -248,7 +248,7 @@ build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = 
                     
                     if (length(sh) > 0) {
                         dt <- data.table(bin_id = sh, prop = proportions)
-                        summed <- dt[, data.table::.(total = sum(prop)), by = bin_id]
+                        summed <- dt[, list(total = sum(prop)), by = bin_id]
                         overlapCount[summed$bin_id] <- summed$total
                     }
                 }
