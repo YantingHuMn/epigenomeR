@@ -9,7 +9,7 @@
 #            out_dir: Output Directory (Optional)
 # Output: Annotated dataframe saved as a .feather file
 #         Two diagnostic plots saved as .PNG in "mav_screen/" folder.
-mav_screen <- function(path, fitting_model = "gam", spline_basis = NULL, seed = 42, font_size = 10, nrow_sample_per = 0.2, out_dir = NULL) {
+mav_screen <- function(path, fitting_model = "gam", spline_basis = NULL, seed = 42, font_size = 10, nrow_sample_per = 0.2, out_dir = NULL, plot = FALSE) {
   # load library
   suppressPackageStartupMessages({
     library(arrow)
@@ -100,37 +100,39 @@ mav_screen <- function(path, fitting_model = "gam", spline_basis = NULL, seed = 
   write_feather(result, path_feather)
 
   # Plot
-  p1 <- ggplot(result, aes(log2(mean), log2(var))) + geom_point(alpha = 1/20) +
-    geom_point(data=result,aes(log2(mean),log2(var_expect)), color="red", size=0.1) +
-    theme_bw() +
-    theme(axis.text = element_text(size=font_size), axis.title = element_text(size=font_size))
+  if (plot == TRUE) {
+    p1 <- ggplot(result, aes(log2(mean), log2(var))) + geom_point(alpha = 1/20) +
+      geom_point(data=result,aes(log2(mean),log2(var_expect)), color="red", size=0.1) +
+      theme_bw() +
+      theme(axis.text = element_text(size=font_size), axis.title = element_text(size=font_size))
 
-  p2 <- ggplot(result, aes(log2(mean), hypervar)) + geom_point(alpha = 1/20) +
-    theme_bw() +
-    theme(axis.text = element_text(size=font_size), axis.title = element_text(size=font_size))
+    p2 <- ggplot(result, aes(log2(mean), hypervar)) + geom_point(alpha = 1/20) +
+      theme_bw() +
+      theme(axis.text = element_text(size=font_size), axis.title = element_text(size=font_size))
 
-  combined_plot <- plot_grid(p1, p2, labels = c('A', 'B'))
-  print(combined_plot)
+    combined_plot <- plot_grid(p1, p2, labels = c('A', 'B'))
+    print(combined_plot)
 
-  path_main_plot <- file.path(out_dir, paste0(output_name, ".png"))
-  ggsave(path_main_plot, plot = combined_plot)
-
-
-  set.seed(seed)
-  nrow_sample = min(nrow(result), nrow_sample)
-  result_sample = result[sample(nrow(result), nrow_sample), ]
-
-  p3 <- ggplot(result_sample, aes(log2(mean), log2(var))) +
-    geom_pointdensity() + scale_color_viridis_c() +
-    geom_point(data=result,aes(log2(mean),log2(var_expect)), color="red", size=0.1) +
-    theme_bw() +
-    theme(axis.text = element_text(size=font_size), axis.title = element_text(size=font_size))
-  print(p3)
+    path_main_plot <- file.path(out_dir, paste0(output_name, ".png"))
+    ggsave(path_main_plot, plot = combined_plot)
 
 
-  density_fig_filename = paste0(output_name, "_smooth-", format(nrow_sample, scientific=FALSE), "_seed-", format(seed, scientific=FALSE), ".png")
-  density_fig_dir_filename = file.path(out_dir, density_fig_filename)
-  ggsave(density_fig_dir_filename, plot = p3)
+    set.seed(seed)
+    nrow_sample = min(nrow(result), nrow_sample)
+    result_sample = result[sample(nrow(result), nrow_sample), ]
+
+    p3 <- ggplot(result_sample, aes(log2(mean), log2(var))) +
+      geom_pointdensity() + scale_color_viridis_c() +
+      geom_point(data=result,aes(log2(mean),log2(var_expect)), color="red", size=0.1) +
+      theme_bw() +
+      theme(axis.text = element_text(size=font_size), axis.title = element_text(size=font_size))
+    print(p3)
+
+
+    density_fig_filename = paste0(output_name, "_smooth-", format(nrow_sample, scientific=FALSE), "_seed-", format(seed, scientific=FALSE), ".png")
+    density_fig_dir_filename = file.path(out_dir, density_fig_filename)
+    ggsave(density_fig_dir_filename, plot = p3)
+  }
 
   return(path_feather)
 }

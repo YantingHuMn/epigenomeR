@@ -3,16 +3,14 @@
 #       with options for strict consistency checking or flexible merging with zero-filling.
 # Parameters: 
 #   cm_file_path: A vector of feather file paths to be merged.
-#   output_path: Output file path for the merged matrix. Default is NULL, which will 
-#                automatically generate "merged.feather" in the common directory of 
-#                input files (or "./" if no common path exists).
+#   output_dir: Output file directory for the merged matrix. Default "./"
 #   check_consistency: Logical. If TRUE, only keep rows (positions) and columns (samples) 
 #                      that exist in ALL input files. If FALSE, merge all rows and columns,
 #                      filling missing values with 0. Default is TRUE.
 # Output: A data frame containing the merged count matrix, with values summed across files.
 #         The merged matrix is also saved as a feather file.
 
-merge_count_matrices <- function(cm_file_path, output_path = NULL, check_consistency = TRUE) {
+merge_count_matrices <- function(cm_file_path, output_dir = "./", check_consistency = TRUE) {
     library(arrow)
     
     if (length(cm_file_path) == 0) {
@@ -80,38 +78,8 @@ merge_count_matrices <- function(cm_file_path, output_path = NULL, check_consist
     }
     
     # Save
-    if (is.null(output_path)) {
-        if (length(cm_file_path) == 1) {
-            common_dir <- dirname(cm_file_path[1])
-        } else {
-            norm_paths <- normalizePath(cm_file_path, mustWork = FALSE)
-            path_parts <- strsplit(norm_paths, .Platform$file.sep)
-            # Find common prefix
-            min_length <- min(sapply(path_parts, length))
-            common_parts <- character(0)
-            if (min_length > 0) {
-                for (i in 1:min_length) {
-                    parts_at_i <- sapply(path_parts, function(x) x[i])
-                    if (length(unique(parts_at_i)) == 1) {
-                        common_parts <- c(common_parts, parts_at_i[1])
-                    } else {
-                        break
-                    }
-                }
-            }
-            # Construct common directory
-            if (length(common_parts) > 0) {
-                common_dir <- paste(common_parts, collapse = .Platform$file.sep)
-                if (substr(norm_paths[1], 1, 1) == "/") {
-                    common_dir <- paste0("/", common_dir)
-                }
-            } else {
-                common_dir <- "."
-            }
-        }
-        output_path <- file.path(common_dir, "count_matrix_merged.feather")
-    } 
+    output_path <- file.path(output_dir, "Count_Matrix_merged.feather")
     message("\nSaving to: ", output_path)
     write_feather(merged_df, output_path)
-    return(merged_df)
+    return(output_path)
 }
