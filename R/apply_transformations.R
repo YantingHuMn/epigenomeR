@@ -25,6 +25,7 @@ apply_transformations <- function(cm_path, transformations = c("remove0", "libno
   })
 
   df <- read_feather(cm_path)
+  df <- as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
   input_prefix <- basename(tools::file_path_sans_ext(cm_path))
 
   pos_colname <- "pos"
@@ -45,7 +46,6 @@ apply_transformations <- function(cm_path, transformations = c("remove0", "libno
   applied <- c()
   for (t in transformations) {
     if (t == "remove0") {
-      message("\n=== Remove all-zero Rows ===")
       zero_rows <- rowSums(df) == 0
       n_zero <- sum(zero_rows)
       if (n_zero > 0) {
