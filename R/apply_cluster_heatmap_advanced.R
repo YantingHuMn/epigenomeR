@@ -53,4 +53,5 @@ apply_cluster_heatmap_advanced <- function(count_matrix_file_path, row_km, col_k
 
   apply_cluster_heatmap(count_matrix_file_path = count_matrix_file_path, row_cluster_file_path = path1, col_cluster_file_path = path2, output_dir_path = output_dir_path)
 
+  return(list("row_table"=path1, "col_table"=path2))
 }
