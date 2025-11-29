@@ -132,4 +132,5 @@ mav_screen <- function(path, fitting_model = "gam", spline_basis = NULL, seed = 
   density_fig_dir_filename = file.path(out_dir, density_fig_filename)
   ggsave(density_fig_dir_filename, plot = p3)
 
+  return(path_feather)
 }

@@ -116,4 +116,6 @@ informative_regions <- function(input_hypervar_path, input_CRF_orig_path, output
     #                             heatmap_legend_param = list(title = "Correlation"))
 
   }
+
+  return(wgc_evenlop_select_keep_dir_filename)
 }
