@@ -7,8 +7,6 @@
 #             col_km: Number of k-means clusters for columns (samples)
 #             output_dir_path: Directory to save cluster files and heatmap output
 #             seed: Random seed for reproducible clustering (default: 123)
-#             show_dend_boolean: Whether to show dendrograms in heatmap (default: FALSE)
-#             count_matrix_overlap: Whether to merge shared positions across matrices (default: FALSE)
 #             lower_range: Lower bound for heatmap color scale (default: NULL, auto-determined)
 #             upper_range: Upper bound for heatmap color scale (default: NULL, auto-determined)
 #             row_title_fontsize: Font size for row cluster titles (default: NULL)
@@ -16,42 +14,38 @@
 #             legend_title_fontsize: Font size for legend title (default: NULL)
 #             legend_label_fontsize: Font size for legend labels (default: NULL)
 # Output: None (saves cluster assignment tables and heatmap plots to output directory)
-apply_cluster_heatmap_advanced <- function(count_matrix_file_path, row_km, col_km, output_dir_path, seed = 42, show_dend_boolean = FALSE, count_matrix_overlap= FALSE, lower_range = NULL, upper_range = NULL, row_title_fontsize = NULL, col_title_fontsize = NULL, legend_title_fontsize = NULL, legend_label_fontsize = NULL) {
+biclustering <- function(cm_path, row_km, col_km, output_dir_path, seed = 42,  lower_range = NULL, upper_range = NULL, row_title_fontsize = NULL, col_title_fontsize = NULL, legend_title_fontsize = NULL, legend_label_fontsize = NULL) {
   library(arrow)
   library(tibble)
   library(dplyr)
-  mat <- as.matrix(column_to_rownames(read_feather(count_matrix_file_path), var = "pos"))
+
+  if (is.null(cm_path) || length(cm_path) == 0) {
+    stop("`count_matrix_file_path` is required", call. = FALSE)
+  }
+  mat <- as.matrix(column_to_rownames(read_feather(cm_path), var = "pos"))
   result <- bidirectional_kmeans_clustering(mat = mat, row_k = row_km, col_k = col_km, seed = seed)
   row_letter <- result$row_letter
   col_num <- result$col_num
 
-  df_row_out <- data.frame(
+  df_row <- data.frame(
     feature = names(row_letter),
     label   = unname(row_letter),
     stringsAsFactors = FALSE
   )
-  df_row_sorted <- df_row_out %>% arrange(label)
 
-  df_col_out <- data.frame(
+  df_col <- data.frame(
     feature = names(col_num),
     label   = unname(col_num),
     stringsAsFactors = FALSE
   )
-  df_col_sorted <- df_col_out %>% arrange(label)
-
-  if (is.null(count_matrix_file_path) || length(count_matrix_file_path) == 0 || any(is.na(count_matrix_file_path)) || any(!nzchar(count_matrix_file_path))) {
-    stop("`count_matrix_file_path` is required", call. = FALSE)
-  }
 
   if (!dir.exists(output_dir_path)) dir.create(output_dir_path, recursive = TRUE, showWarnings = FALSE)
-
   path1 <- file.path(output_dir_path, "row_table.tsv")
   path2 <- file.path(output_dir_path, "col_table.tsv")
+  write.table(df_row, path1, sep = "\t", quote = FALSE, row.names = FALSE)
+  write.table(df_col, path2, sep = "\t", quote = FALSE, row.names = FALSE)
 
-  write.table(df_row_sorted, path1, sep = "\t", quote = FALSE, row.names = FALSE)
-  write.table(df_col_sorted, path2, sep = "\t", quote = FALSE, row.names = FALSE)
+  apply_cluster_heatmap(count_matrix_file_path = cm_path, row_cluster_file_path = path1, col_cluster_file_path = path2, output_dir_path = output_dir_path)
 
-  apply_cluster_heatmap(count_matrix_file_path = count_matrix_file_path, row_cluster_file_path = path1, col_cluster_file_path = path2, output_dir_path = output_dir_path)
-
-  return(list("row_table"=path1, "col_table"=path2))
+  return(list("row_table" = path1, "col_table" = path2))
 }

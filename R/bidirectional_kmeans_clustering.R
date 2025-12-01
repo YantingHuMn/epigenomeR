@@ -33,9 +33,6 @@
 
 bidirectional_kmeans_clustering <- function(mat, row_k, col_k, row_repeats = 1, col_repeats = 1, seed = 42, do_order_clusters = TRUE, cluster_distance = "euclidean", cluster_linkage = "complete", do_reorder_within_clusters = TRUE, feature_distance = NULL, feature_linkage = NULL
 ) {
-  library(clue)
-  set.seed(seed)
-
   if (!is.matrix(mat)) {
     stop("Input must be a matrix, not ", class(mat)[1], call. = FALSE)
   }
@@ -50,6 +47,8 @@ bidirectional_kmeans_clustering <- function(mat, row_k, col_k, row_repeats = 1, 
     feature_linkage = cluster_linkage
   }
 
+  set.seed(seed)
+  
   # Consensus k-means
   consensus_kmeans <- function(m, k, reps) {
     parts <- lapply(seq_len(reps), function(i) {
@@ -79,18 +78,25 @@ bidirectional_kmeans_clustering <- function(mat, row_k, col_k, row_repeats = 1, 
   }
 
   # Reorder within clusters
-  reorder_within_clusters <- function(m, cl) {
+  reorder_within_clusters <- function(m, cl, do_reorder) {
     weights <- -rowMeans(m, na.rm = TRUE)
     final_order <- integer(0)
-    for (i in sort(unique(cl))) {
-      idx <- which(cl == i)
-      if (length(idx) <= 1) {
+    if (!do_reorder) {
+      for (i in sort(unique(cl))) {
+        idx <- which(cl == i)
         final_order <- c(final_order, idx)
-      } else {
-        submat <- m[idx, , drop = FALSE]
-        hc <- hclust(dist(submat, method = feature_distance), method = feature_linkage)
-        dend <- reorder(as.dendrogram(hc), weights[idx], mean)
-        final_order <- c(final_order, idx[order.dendrogram(dend)])
+      }
+    } else {
+      for (i in sort(unique(cl))) {
+        idx <- which(cl == i)
+        if (length(idx) <= 1) {
+          final_order <- c(final_order, idx)
+        } else {
+          submat <- m[idx, , drop = FALSE]
+          hc <- hclust(dist(submat, method = feature_distance), method = feature_linkage)
+          dend <- reorder(as.dendrogram(hc), weights[idx], mean)
+          final_order <- c(final_order, idx[order.dendrogram(dend)])
+        }
       }
     }
     cl <- cl[final_order]
@@ -101,18 +107,14 @@ bidirectional_kmeans_clustering <- function(mat, row_k, col_k, row_repeats = 1, 
   row_cl <- consensus_kmeans(mat, row_k, row_repeats)
   row_cl <- order_clusters(mat, row_cl, do_order_clusters)
   names(row_cl) <- rownames(mat)
-  if (do_reorder_within_clusters) {
-    row_cl <- reorder_within_clusters(mat, row_cl)
-  }
+  row_cl <- reorder_within_clusters(mat, row_cl, do_reorder_within_clusters)
   row_letter <- LETTERS[row_cl]
   names(row_letter) <- names(row_cl)
 
   col_cl <- consensus_kmeans(t(mat), col_k, col_repeats)
   col_cl <- order_clusters(t(mat), col_cl, do_order_clusters)
   names(col_cl) <- colnames(mat)
-  if (do_reorder_within_clusters) {
-    col_cl <- reorder_within_clusters(t(mat), col_cl)
-  }
+  col_cl <- reorder_within_clusters(t(mat), col_cl, do_reorder_within_clusters)
 
   list(row_letter = row_letter, col_num = col_cl)
 }
