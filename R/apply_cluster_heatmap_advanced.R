@@ -16,15 +16,15 @@
 #             legend_title_fontsize: Font size for legend title (default: NULL)
 #             legend_label_fontsize: Font size for legend labels (default: NULL)
 # Output: None (saves cluster assignment tables and heatmap plots to output directory)
-apply_cluster_heatmap_advanced <- function(count_matrix_file_path, row_km, col_km, output_dir_path, seed = 123, show_dend_boolean = FALSE, count_matrix_overlap= FALSE, lower_range = NULL, upper_range = NULL, row_title_fontsize = NULL, col_title_fontsize = NULL, legend_title_fontsize = NULL, legend_label_fontsize = NULL) {
+apply_cluster_heatmap_advanced <- function(count_matrix_file_path, row_km, col_km, output_dir_path, seed = 42, show_dend_boolean = FALSE, count_matrix_overlap= FALSE, lower_range = NULL, upper_range = NULL, row_title_fontsize = NULL, col_title_fontsize = NULL, legend_title_fontsize = NULL, legend_label_fontsize = NULL) {
   library(arrow)
   library(tibble)
+  library(dplyr)
   mat <- as.matrix(column_to_rownames(read_feather(count_matrix_file_path), var = "pos"))
-  result <- rowcol_km_like_ComplexHeatmap(mat = mat, row_k = row_km, col_k = col_km)
+  result <- bidirectional_kmeans_clustering(mat = mat, row_k = row_km, col_k = col_km, seed = seed)
   row_letter <- result$row_letter
   col_num <- result$col_num
 
-  library(dplyr)
   df_row_out <- data.frame(
     feature = names(row_letter),
     label   = unname(row_letter),

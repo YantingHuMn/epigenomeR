@@ -12,7 +12,7 @@
 correlation_matrix <- function(df, cluster_df) {
   common_samples <- intersect(colnames(df), colnames(cluster_df))
 
-  if(length(common_samples) == 0) {
+  if (length(common_samples) == 0) {
     stop("No common samples between df and cluster_df")
   }
 
