@@ -7,7 +7,7 @@
 #             col_km: Number of k-means clusters for columns (samples)
 #             out_dir: Directory to save cluster files and heatmap output
 #             seed: Random seed for reproducible clustering (default: 123)
-#             plot: whether to generate heatmap plot
+#             plot: whether to generate heatmap plot (default: TRUE)
 #             show_column_names: whether to show column names at the bottom of the heatmap (default: FALSE)
 #             lower_range: Lower bound for heatmap color scale (default: NULL, auto-determined)
 #             upper_range: Upper bound for heatmap color scale (default: NULL, auto-determined)

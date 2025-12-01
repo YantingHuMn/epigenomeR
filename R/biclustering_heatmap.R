@@ -68,7 +68,7 @@ biclustering_heatmap <- function(mat, row_cluster_file_path, col_cluster_file_pa
   calculate_legend_fontsize <- function(col_labels, cell_width_mm, legend_title = "Normalized Read Counts", safety_factor = 1.2) {
     available_width_mm <- length(col_labels) * cell_width_mm * safety_factor
     title_chars <- nchar(legend_title)
-    max_title_fontsize <- available_width_mm  / (title_chars * 0.6)
+    max_title_fontsize <- available_width_mm  / (title_chars * 0.2)
     max_title_fontsize
   }
 
@@ -95,7 +95,7 @@ biclustering_heatmap <- function(mat, row_cluster_file_path, col_cluster_file_pa
   col_fun <- colorRamp2(c(lower_range, avg, upper_range), c("#3155C3", "white", "#AF0525"))
 
   if (is.null(row_title_fontsize)) {
-    row_title_fontsize <- 40
+    row_title_fontsize <- 35
   }
   if (is.null(col_title_fontsize)) {
     col_title_fontsize <- 22
