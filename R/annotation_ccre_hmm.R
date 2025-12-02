@@ -1,35 +1,22 @@
-# Post: Annotate and Plot CCRE and ChromHMM Composition for Row Cluster
+# Annotate and Plot CCRE and ChromHMM Composition for Row Cluster
 # Post: Analyzes genomic annotation composition of clustered regions by overlapping with CCRE and ChromHMM annotations, then generates comparative bar plots showing regulatory element distribution across clusters.
 # Parameter: row_cluster_file_path: Path to row cluster assignment .tsv file with feature positions and cluster labels
-#            output_dir_path: Directory to save annotation plot outputs
+#            out_dir: Directory to save annotation plot outputs
 # Output: Generates and saves two bar plot PDF files for CCRE and ChromHMM composition analysis
-biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_path, txdb = NULL) {
+
+annotation_ccre_hmm <- function(row_cluster_file_path, out_dir, ref_genome = "hg38", txdb = NULL) {
   # load library
-  if (!requireNamespace("cowplot", quietly = TRUE)) {
-    stop("The cowplot package is required but not installed.")
-  }
-
-  if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
-    stop("The GenomicRanges package is required but not installed.")
-  }
-
-  # if (!requireNamespace("RJSONIO", quietly = TRUE)) {
-  #     stop("The RJSONIO package is required but not installed.")
-  # }
-
-  # if (!requireNamespace("rtracklayer", quietly = TRUE)) {
-  #     stop("The rtracklayer package is required but not installed.")
-  # }
-
   suppressPackageStartupMessages({
     library(ggplot2)
     library(cowplot)
     library(GenomicRanges)
+    library(GenomeInfoDb)
     library(glue)
     #library(RJSONIO)
     library(tidyverse)
     library(ChIPseeker)
     library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+    library(TxDb.Mmusculus.UCSC.mm10.knownGene)
     library(tools)
     library(stringr)
     library(data.table)
@@ -53,6 +40,7 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
     end.field = "end",
     keep.extra.columns = TRUE
   )
+  current_style <- seqlevelsStyle(biclustering_gr)[1]
 
   # To-do: need to check whether use as an input variable
   cluster_all_levels <- c(
@@ -79,7 +67,28 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
   )
 
   if (is.null(txdb)) {
-    txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
+    if (ref_genome == "hg38") {
+      txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
+    } else if (ref_genome == "mm10") {
+      txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene::TxDb.Mmusculus.UCSC.mm10.knownGene
+    } else {
+      stop("Please provide TxDb object or use hg19/mm10 as ref_genome")
+    }
+  }
+  target_style <- seqlevelsStyle(txdb)[1]
+
+  if (current_style != target_style) {
+    message(sprintf("Converting chromosome style from %s to %s", current_style, target_style))
+    tryCatch({
+      seqlevelsStyle(biclustering_gr) <- target_style
+    }, error = function(e) {
+      warning("Chromosome style conversion failed. Trying manual conversion...")
+      if (target_style == "UCSC" && !any(grepl("^chr", seqlevels(biclustering_gr)))) {
+        seqlevels(biclustering_gr) <- paste0("chr", seqlevels(biclustering_gr))
+      } else if (target_style == "NCBI" && any(grepl("^chr", seqlevels(biclustering_gr)))) {
+        seqlevels(biclustering_gr) <- gsub("^chr", "", seqlevels(biclustering_gr))
+      }
+    })
   }
 
   unique_clusters <- sort(unique(biclustering_result$label), method = "radix")
@@ -167,10 +176,10 @@ biclustering_annotation_ccre_hmm <- function(row_cluster_file_path, output_dir_p
     guides(fill = guide_legend(title = NULL, ncol = 1, reverse = TRUE))
 
   # save
-  if (!dir.exists(output_dir_path)) {
-    dir.create(output_dir_path, recursive = TRUE, showWarnings = FALSE)
+  if (!dir.exists(out_dir)) {
+    dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   }
-  ggsave(file.path(output_dir_path, "p_ccre_agnostic.pdf"), plot = p_ccre_agnostic, width = 6, height = 5)
-  ggsave(file.path(output_dir_path, "p_chromhmm_short.pdf"), plot = p_chromhmm_short, width = 6, height = 5)
+  ggsave(file.path(out_dir, "p_ccre_agnostic.pdf"), plot = p_ccre_agnostic, width = 6, height = 5)
+  ggsave(file.path(out_dir, "p_chromhmm_short.pdf"), plot = p_chromhmm_short, width = 6, height = 5)
 
 }

@@ -44,7 +44,8 @@ biclustering_heatmap <- function(mat, row_cluster_file_path, col_cluster_file_pa
     c(w, h)
   }
   
-  calculate_cell_size <- function(row_labels, col_labels, row_fontsize, col_fontsize, default_cell_width = 5, default_cell_height = 1, safety_factor = 1.5) {
+  calculate_cell_size <- function(row_labels, col_labels, row_fontsize, col_fontsize, default_cell_width = 5,  safety_factor = 1.5) {
+    default_cell_height <- default_cell_width * length(col_labels) / length(row_labels)
     row_counts <- table(row_labels)
     max_row_repeat_count <- max(row_counts)
     col_counts <- table(col_labels)
@@ -89,22 +90,22 @@ biclustering_heatmap <- function(mat, row_cluster_file_path, col_cluster_file_pa
     lower_range <- min(mat, na.rm = TRUE)
   }
   if (is.null(upper_range) || upper_range == "") {
-    upper_range <- max(mat, na.rm = TRUE)
+    upper_range <- quantile(mat, probs = 0.99, na.rm = TRUE)
   }
   avg <- (lower_range + upper_range) / 2
   col_fun <- colorRamp2(c(lower_range, avg, upper_range), c("#3155C3", "white", "#AF0525"))
 
   if (is.null(row_title_fontsize)) {
-    row_title_fontsize <- 35
+    row_title_fontsize <- 20
   }
   if (is.null(col_title_fontsize)) {
-    col_title_fontsize <- 22
+    col_title_fontsize <- 20
   } 
   if (is.null(legend_title_fontsize)) {
-    legend_title_fontsize <- 30
+    legend_title_fontsize <- 15
   }
   if (is.null(legend_label_fontsize)) {
-    legend_label_fontsize <- 20
+    legend_label_fontsize <- 15
   }
   
   cell_size <- calculate_cell_size(row_labels = row_split, col_labels = col_split, row_fontsize = row_title_fontsize, col_fontsize = col_title_fontsize)
@@ -126,7 +127,7 @@ biclustering_heatmap <- function(mat, row_cluster_file_path, col_cluster_file_pa
 
     # General setting
     width = ncol(mat) * unit(cell_width, "mm"), height = nrow(mat) * unit(cell_height, "mm"),
-    row_gap = unit(3, "mm"), column_gap = unit(3, "mm"),
+    row_gap = unit(1, "mm"), column_gap = unit(1, "mm"),
     row_title_gp = gpar(fontsize = row_title_fontsize), column_title_gp = gpar(fontsize = col_title_fontsize),
     show_row_names = FALSE, show_column_names = show_column_names,
     column_labels = TeX(colnames(mat)),
