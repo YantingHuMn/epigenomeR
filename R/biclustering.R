@@ -1,21 +1,30 @@
 # Automatically performs k-means clustering, generates cluster files internally, and draw heatmap
-# Post: create_cluster_heatmap can be replaced by this function
-# Post: Advanced wrapper function that combines automated k-means clustering with heatmap generation. Performs clustering analysis, saves cluster assignments, and generates publication-ready heatmaps in a single workflow.
-# Post: include function rowcol_km_like_ComplexHeatmap; apply_cluster_heatmap; combine_count_matrix
-# Parameters: count_matrix_file_path: Path to count matrix .feather file (rows=genomic positions, cols=samples)
-#             row_km: Number of k-means clusters for rows (genomic features)
-#             col_km: Number of k-means clusters for columns (samples)
-#             out_dir: Directory to save cluster files and heatmap output
-#             seed: Random seed for reproducible clustering (default: 123)
-#             plot: whether to generate heatmap plot (default: TRUE)
-#             show_column_names: whether to show column names at the bottom of the heatmap (default: FALSE)
-#             lower_range: Lower bound for heatmap color scale (default: NULL, auto-determined)
-#             upper_range: Upper bound for heatmap color scale (default: NULL, auto-determined)
-#             row_title_fontsize: Font size for row cluster titles (default: NULL)
-#             col_title_fontsize: Font size for column cluster titles (default: NULL)
-#             legend_title_fontsize: Font size for legend title (default: NULL)
-#             legend_label_fontsize: Font size for legend labels (default: NULL)
-# Output: None (saves cluster assignment tables and heatmap plots to output directory)
+# Description: This function reads a count matrix from a `.feather` file, performs
+#              k-means clustering on both rows (genomic features) and columns (samples),
+#              saves the cluster assignments, and optionally generates a publication-ready
+#              heatmap in a single workflow.
+# Parameters:  cm_path: Path to count matrix `.feather` file
+#                        (must contain a `pos` column for feature IDs and sample columns).
+#              row_km: Number of k-means clusters for rows (genomic features).
+#              col_km: Number of k-means clusters for columns (samples).
+#              out_dir: Directory to save cluster tables and heatmap output.
+#              seed: Random seed for reproducible clustering (default: 42).
+#              plot: Whether to generate a heatmap plot (default: TRUE).
+#              show_column_names: Whether to show column names at the bottom of the
+#                                 heatmap (default: FALSE).
+#              lower_range: Lower bound for the heatmap color scale
+#                          (default: NULL, automatically determined).
+#              upper_range: Upper bound for the heatmap color scale
+#                          (default: NULL, automatically determined).
+#              row_title_fontsize: Font size for row cluster titles (default: NULL).
+#              col_title_fontsize: Font size for column cluster titles (default: NULL).
+#              legend_title_fontsize: Font size for the legend title (default: NULL).
+#              legend_label_fontsize: Font size for the legend labels (default: NULL).
+# Output:     A named list with:
+#              - "row_table": Path to the saved row cluster assignment table (`row_table.tsv`).
+#              - "col_table": Path to the saved column cluster assignment table (`col_table.tsv`).
+#             (Cluster tables and heatmap files are written to `out_dir`.)
+
 biclustering <- function(cm_path, row_km, col_km, out_dir, seed = 42, plot = TRUE, show_column_names = FALSE, lower_range = NULL, upper_range = NULL, row_title_fontsize = NULL, col_title_fontsize = NULL, legend_title_fontsize = NULL, legend_label_fontsize = NULL) {
   library(arrow)
   library(tibble)
