@@ -24,19 +24,29 @@
 
 biclustering_analysis_wrapper <- function(cm_path, out_dir, apply_filter = TRUE, row_km = 15, col_km = 3, apply_annotation = TRUE, plot = TRUE) {
     # Step1: Merge all the count matrix files
-    cat("\n","=="*10,"\n")
-    cat("  Merge all count matrix files")
-    cat("=="*10,"\n")
-    merged_cm_path <- merge_count_matrices(cm_path = cm_path, out_dir = out_dir)
-
-    # Step2: Filter highly variable regions
-    cat("\n","=="*10,"\n")
-    cat("  Filter highly variable regions")
-    cat("=="*10,"\n")
-    if (apply_filter) {
-        f_cm_path <- detect_hvr(transformed_cm_path = merged_cm_path, out_dir = out_dir, plot = plot)
+    if (is.vector(cm_path) && length(cm_path) > 1) {
+        cat("\n","=="*10,"\n")
+        cat("  Merge all count matrix files")
+        cat("=="*10,"\n")
+        merged_cm_path <- merge_count_matrices(cm_path = cm_path, out_dir = out_dir)
     } else {
-        f_cm_path <- merged_cm_path
+        merged_cm_path <- cm_path
+    }
+
+    # Step2: Apply transformation
+    cat("\n","=="*10,"\n")
+    cat("  Apply transformation")
+    cat("=="*10,"\n")
+    transformed_cm_path <- apply_transformation(cm_path = merged_cm_path, out_dir = out_dir)
+
+    # Step3: Filter highly variable regions
+    if (apply_filter) {
+        cat("\n","=="*10,"\n")
+        cat("  Filter highly variable regions")
+        cat("=="*10,"\n")
+        f_cm_path <- detect_hvr(transformed_cm_path = transformed_cm_path, out_dir = out_dir, plot = plot)
+    } else {
+        f_cm_path <- transformed_cm_path
     }
 
     # Step3: Biclustering 

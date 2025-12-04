@@ -10,17 +10,6 @@
 # Output: A data frame where each row corresponds to a motif with enrichment statistics (odds ratio, p-value, FDR) saved to output_path
 enrich_motif <- function(target_region_path, control_region_path, functional_region_path = NULL, output_path = output_path, region_size = 200, motif_lib = "JASPAR_hg38", rds_path = NULL) {
   # load package
-  if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
-    stop("The GenomicRanges package is required but not installed.")
-  }
-
-  if (!requireNamespace("data.table", quietly = TRUE)) {
-    stop("The data.table package is required but not installed.")
-  }
-
-  if (!requireNamespace("glue", quietly = TRUE)) {
-    stop("The glue package is required but not installed.")
-  }
   suppressPackageStartupMessages({
     library(GenomicRanges)
     library(data.table)
