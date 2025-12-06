@@ -16,10 +16,8 @@ transform_df <- function(df, transformations = c("log2")) {
       result <- t(result)
     } else if (t == "Z") {
       result <- as.data.frame(scale(result))
-    } else if (t =="cluster") {
-      next
     } else {
-      warning(paste0("Unrecognized transformation: ", t, "; Only accept log2, t, Z, cluster (case sensitive)"))
+      warning(paste0("Unrecognized transformation: ", t, "; Only accept log2, t, Z"))
       next
     }
   }

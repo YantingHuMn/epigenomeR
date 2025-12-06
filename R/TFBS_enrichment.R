@@ -105,5 +105,5 @@ TFBS_enrichment <- function(target_region, control_region, regions = 800,  out_p
   n_significant <- sum(res$FDR < 0.05)
   message(glue("Results saved to {out_path}"))
   message(glue("Found {n_significant} significant motifs at FDR < 0.05"))
-  return(out_path)
+  invisible(out_path)
 }
