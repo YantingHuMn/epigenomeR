@@ -85,14 +85,8 @@ build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = 
 
     # Detect chromosome naming style
     bam_header <- scanBamHeader(bamFiles[1])
-    seqs <- names(bam_header[[1]]$targets)
-    if (any(grepl("^chr[0-9XYM]+$", seqs))) {
-        bam_style <- "UCSC"
-    } else if (any(grepl("^NC_[0-9]+\\.[0-9]+$", seqs))) {
-        bam_style <- "RefSeq"
-    } else {
-        bam_style <- "NCBI"
-    }
+    bam_seqinfo <- Seqinfo(seqnames = names(bam_header[[1]]$targets), seqlengths = bam_header[[1]]$targets)
+    bam_style <- seqlevelsStyle(bam_seqinfo)[1]
 
     # Post: Use bplapply for parallel chromosome processing
     #       Generate Count Matrix for each chr

@@ -8,10 +8,11 @@
 #   ref_genome: Reference genome version - "hg38" or "mm10" (default: "hg38")
 #   functional_region: A GRanges object or NULL. Optional functional regions (e.g., open chromatin, accessible regions) to restrict motif analysis. If provided, only motif sites overlapping these regions will be considered.
 #   out_path: Output path to save enrichment results table (default: "./TFBS_enrichment.tsv")
+#   current_style: A string specifying the desired seqlevelsStyle (e.g., "UCSC", "Ensembl"). If NULL, auto-detect from target_region; otherwise, enforce all objects to use the specified style. (default: NULL)
 #
 # Output: A data frame where each row corresponds to a motif with enrichment statistics (odds ratio, p-value, FDR) saved to output_path
 
-TFBS_enrichment <- function(target_region, control_region, regions = 800,  out_path = "./TFBS_enrichment.tsv",  functional_region = NULL, ref_genome = "hg38") {
+TFBS_enrichment <- function(target_region, control_region, regions = 800,  out_path = "./TFBS_enrichment.tsv",  functional_region = NULL, ref_genome = "hg38", current_style = NULL) {
   # Load packages
   suppressPackageStartupMessages({
     library(IRanges)
@@ -33,8 +34,17 @@ TFBS_enrichment <- function(target_region, control_region, regions = 800,  out_p
   motif_library <- readRDS(system.file("extdata", motif_file, package = "epigenomeR"))
   message(glue("Using reference genome {ref_genome} with {length(motif_library)} TFs"))
 
+  if (is.null(current_style)) {
+    current_style <- seqlevelsStyle(target_region)[1]
+  } else {
+    seqlevelsStyle(target_region) <- current_style
+  }
+  seqlevelsStyle(control_region) <- current_style
+  seqlevelsStyle(motif_library) <- current_style
+
   # Filter by functional regions
   if(!is.null(functional_region)){
+    seqlevelsStyle(functional_region) <- current_style
     message(glue("Filtering motif site using {length(functional_region)} functional regions"))
     motif_library <- endoapply(motif_library, subsetByOverlaps, functional_region)
     motif_library <- motif_library[lengths(motif_library) > 0]
