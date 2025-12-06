@@ -19,10 +19,9 @@
 #       - When the user provided specific regions of interest (region file path),
 #         this should be FALSE, as those regions are already meaningful and do not require annotation.
 #   plot: Logical. Whether to generate diagnostic plots during filtering and biclustering steps.
-# 
-# Output:
 
-biclustering_analysis_wrapper <- function(cm_path, out_dir, apply_filter = TRUE, row_km = 15, col_km = 3, apply_annotation = TRUE, plot = TRUE) {
+
+biclustering_analysis_wrapper <- function(cm_path, out_dir, apply_filter = TRUE, row_km = 15, col_km = 3, apply_annotation = TRUE, ref_genome = "hg38", plot = TRUE) {
     # Step1: Merge all the count matrix files
     if (is.vector(cm_path) && length(cm_path) > 1) {
         cat("\n","=="*10,"\n")
@@ -60,6 +59,7 @@ biclustering_analysis_wrapper <- function(cm_path, out_dir, apply_filter = TRUE,
         cat("\n","=="*10,"\n")
         cat("  Annotation")
         cat("=="*10,"\n")
-        annotation_ccre_hmm(row_cluster_file_path = cluster_list$row_table, output_dir_path = out_dir)
+        biclustering_annotation_ccre_hmm(row_cluster_file_path = cluster_list$row_table, output_dir_path = out_dir, ref_genome = ref_genome)
+        biclustering_TFBS_annotation(row_cluster_file_path = cluster_list$row_table, output_dir_path = out_dir, ref_genome = ref_genome)
     }
 }
