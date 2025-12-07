@@ -66,6 +66,7 @@ biclustering_annotation_TFBS <- function(row_cluster_file_path, out_dir = "./", 
         TFBS_enrichment(target_region = row_grl[[label]], control_region = control_gr,out_path = out_path, ref_genome = ref_genome, style = style)
         out_path
     })
+    tsv_paths <- unlist(tsv_paths)
 
     if (plot) {
         cat("\n", strrep("=", 20), "\n", sep = "")

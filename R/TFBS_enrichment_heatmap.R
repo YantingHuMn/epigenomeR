@@ -49,7 +49,7 @@ draw_heatmap <- function(data, save_path, col_fun, name, apply_cluster = FALSE) 
   pdf(save_path, width = pdf_width, height = pdf_height)
   draw(h, heatmap_legend_side = "right", padding = unit(c(4, 4, 4, 4), "mm"))
   dev.off()  
-  cat(glue("Saved heatmap: {save_path}\n"))
+  cat(glue("Saved heatmap: {save_path}"), "\n")
 }
 
 # Peak Enrichment Heatmap
@@ -94,7 +94,7 @@ TFBS_enrichment_heatmap <- function(tsv_path, label, out_dir, top_n = NULL, sele
   tsv_path <- tsv_path[sorted_indices]
 
   # read first tsv file
-  first_file <- read.table(tsv_path[1], sep = "\t", header = TRUE, row.names = 1)
+  first_file <- read.table(tsv_path[[1]], sep = "\t", header = TRUE, row.names = 1)
   tfbs_ids <- rownames(first_file)
   n_tfbs <- length(tfbs_ids)
   n_samples <- length(label)
@@ -105,7 +105,7 @@ TFBS_enrichment_heatmap <- function(tsv_path, label, out_dir, top_n = NULL, sele
   target_hit_mat <- matrix(NA, nrow = n_tfbs, ncol = n_samples, dimnames = list(tfbs_ids, label))
 
   for (i in seq_along(tsv_path)) {
-    file_path <- tsv_path[i]
+    file_path <- tsv_path[[i]]
     sample_label <- label[i]
     if (!file.exists(file_path)) {
       warning(glue("File {file_path} does not exist. Skipping."))
@@ -140,7 +140,7 @@ TFBS_enrichment_heatmap <- function(tsv_path, label, out_dir, top_n = NULL, sele
     rowSums(target_hit_mat >= target_hit_thresh, na.rm = TRUE) >= 1 
   odds_ratio_mat <- odds_ratio_mat[keep_tfbs, , drop = FALSE]
   FDR_mat <- FDR_mat[keep_tfbs, , drop = FALSE]
-  cat(glue("Filtered to {sum(keep_tfbs)} TFBS from {length(keep_tfbs)} total\n"))
+  cat(glue("Filtered to {sum(keep_tfbs)} TFBS from {length(keep_tfbs)} total"), "\n")
 
   # apply selected_tfs filter if specified
   if (!is.null(selected_tfs)) {
@@ -151,7 +151,7 @@ TFBS_enrichment_heatmap <- function(tsv_path, label, out_dir, top_n = NULL, sele
     } else {
       odds_ratio_mat <- odds_ratio_mat[selected_rows, , drop = FALSE]
       FDR_mat <- FDR_mat[selected_rows, , drop = FALSE]
-      cat(glue("Filtered to {sum(selected_rows)} TFBS after applying selected_tfs filter\n"))
+      cat(glue("Filtered to {sum(selected_rows)} TFBS after applying selected_tfs filter"), "\n")
     }
   }
 
@@ -159,7 +159,7 @@ TFBS_enrichment_heatmap <- function(tsv_path, label, out_dir, top_n = NULL, sele
   if (nrow(odds_ratio_mat) == 0) {
     stop("No TFBS left after filtering. Cannot generate heatmap.")
   }
-  cat(glue("Final matrix: {nrow(odds_ratio_mat)} TFBS × {ncol(odds_ratio_mat)} samples\n"))
+  cat(glue("Final matrix: {nrow(odds_ratio_mat)} TFBS × {ncol(odds_ratio_mat)} samples"), "\n")
 
   # first heatmap (all)
   odds_ratio_log2 <- log2(odds_ratio_mat)
@@ -177,7 +177,7 @@ TFBS_enrichment_heatmap <- function(tsv_path, label, out_dir, top_n = NULL, sele
       selected_tfbs <- c(selected_tfbs, top_tfbs)
     }
     selected_tfbs <- unique(selected_tfbs)
-    cat(glue("Selected {length(selected_tfbs)} unique TFBS from top {top_n} per sample\n"))
+    cat(glue("Selected {length(selected_tfbs)} unique TFBS from top {top_n} per sample"), "\n")
     odds_ratio_log2_topn <- odds_ratio_log2[selected_tfbs, , drop = FALSE]
     draw_heatmap(data = odds_ratio_log2_topn, save_path = file.path(out_dir, paste0("TFBS_heatmap_top", top_n, ".pdf")), col_fun = col_fun, name = "log2(Odds Ratio)", apply_cluster = apply_cluster)
   }
@@ -185,6 +185,6 @@ TFBS_enrichment_heatmap <- function(tsv_path, label, out_dir, top_n = NULL, sele
   # save .csv
   write.csv(odds_ratio_log2, file.path(out_dir, "odds_ratio_log2.csv"))
   write.csv(FDR_mat, file.path(out_dir, "FDR.csv"))
-  cat(glue("Saved odds ratio matrix: {file.path(out_dir, 'odds_ratio_log2.csv')}\n"))
-  cat(glue("Saved FDR matrix: {file.path(out_dir, 'FDR.csv')}\n"))
+  cat(glue("Saved odds ratio matrix: {file.path(out_dir, 'odds_ratio_log2.csv')}"), "\n")
+  cat(glue("Saved FDR matrix: {file.path(out_dir, 'FDR.csv')}"), "\n")
 }
