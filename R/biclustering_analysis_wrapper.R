@@ -40,7 +40,7 @@ biclustering_analysis_wrapper <- function(cm_path, out_dir, apply_filter = TRUE,
 
     # Step3: Filter highly variable regions
     if (apply_filter) {
-        cat("\n","=="*10,"\n")
+        cat("\n", strrep("=", 20), "\n", sep = "")
         cat("  Filter highly variable regions")
         cat("\n", strrep("=", 20), "\n", sep = "")
         f_cm_path <- detect_hvr(transformed_cm_path = transformed_cm_path, out_dir = out_dir, plot = plot)

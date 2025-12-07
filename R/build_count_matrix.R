@@ -29,7 +29,7 @@ build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = 
         library(GenomeInfoDb)
         library(Rsamtools)
         library(Biostrings)
-        library(BSgenome.Hsapiens.NCBI.GRCh38)
+        library(BSgenome.Hsapiens.UCSC.hg38)
         library(BSgenome.Mmusculus.UCSC.mm10)
         library(plyranges)
         library(arrow)
@@ -184,7 +184,7 @@ build_count_matrix <- function(bam_path, regions, save_dir = "./", ref_genome = 
     } else {
         # Get reference genome size
         if (ref_genome == "hg38") {
-            refGenome <- BSgenome.Hsapiens.NCBI.GRCh38
+            refGenome <- BSgenome.Hsapiens.UCSC.hg38
         } else if (ref_genome == "mm10") {
             refGenome <- BSgenome.Mmusculus.UCSC.mm10
         } else {

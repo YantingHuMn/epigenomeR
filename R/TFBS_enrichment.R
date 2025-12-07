@@ -12,7 +12,7 @@
 #
 # Output: A data frame where each row corresponds to a motif with enrichment statistics (odds ratio, p-value, FDR) saved to output_path
 
-TFBS_enrichment <- function(target_region, control_region, regions = 800,  out_path = "./TFBS_enrichment.tsv",  functional_region = NULL, ref_genome = "hg38", style = NULL) {
+TFBS_enrichment <- function(target_region, control_region, regions = NULL, out_path = "./TFBS_enrichment.tsv",  functional_region = NULL, ref_genome = "hg38", style = NULL) {
   # Load packages
   suppressPackageStartupMessages({
     library(IRanges)
@@ -21,9 +21,10 @@ TFBS_enrichment <- function(target_region, control_region, regions = 800,  out_p
     library(glue)
   })
 
-  # Load target & control regions
-  # target_region <- resize(target_region, width = regions, fix='center')
-  # control_region <- resize(control_region, width = regions, fix='center')
+  if (!is.null(regions)) {
+    target_region <- resize(target_region, width = regions, fix='center')
+    control_region <- resize(control_region, width = regions, fix='center')
+  }
 
   # Load motif library
   motif_file <- switch(ref_genome,
