@@ -90,7 +90,7 @@ biclustering_heatmap <- function(mat, row_cluster_file_path, col_cluster_file_pa
     lower_range <- min(mat, na.rm = TRUE)
   }
   if (is.null(upper_range) || upper_range == "") {
-    upper_range <- quantile(mat, probs = 0.99, na.rm = TRUE)
+    upper_range <- max(mat, na.rm = TRUE)
   }
   avg <- (lower_range + upper_range) / 2
   col_fun <- colorRamp2(c(lower_range, avg, upper_range), c("#3155C3", "white", "#AF0525"))
