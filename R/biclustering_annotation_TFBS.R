@@ -35,9 +35,9 @@ biclustering_annotation_TFBS <- function(row_cluster_file_path, out_dir = "./", 
     row_grl <- split(row_gr, row_gr$label)
 
     # Generate matched control regions
-    cat("\n", "=="*10,"\n")
+    cat("\n", strrep("=", 20), "\n", sep = "")
     cat("  Generating matched control regions")
-    cat("\n", "=="*10,"\n")
+    cat("\n", strrep("=", 20), "\n", sep = "")
     control_grl <- lapply(names(row_grl), function(label) {
         cat("\n", "Processing cluster:", label, "with", length(row_grl[[label]]), "regions\n")
         target_gr <- row_grl[[label]]
@@ -57,20 +57,20 @@ biclustering_annotation_TFBS <- function(row_cluster_file_path, out_dir = "./", 
     cat("\n", "Control regions saved to:", file.path(out_dir, "all_controls.bed"), "\n")
 
     # TFBS enrichment for each cluster
-    cat("\n", "=="*10,"\n")
+    cat("\n", strrep("=", 20), "\n", sep = "")
     cat("  TFBS Enrichment Analysis")
-    cat("\n", "=="*10,"\n")
+    cat("\n", strrep("=", 20), "\n", sep = "")
     tsv_paths <- lapply(names(row_grl), function(label) {
         cat("\n", "Processing TFBS enrichment for:", label, "\n")
         out_path <- file.path(out_dir, paste0("TFBS_enrichment_cluster_", label, ".tsv"))
-        TFBS_enrichment(target_region = row_grl[[label]], control_region = control_gr, regions = regions, out_path = out_path, ref_genome = ref_genome, style = style)
+        TFBS_enrichment(target_region = row_grl[[label]], control_region = control_gr,out_path = out_path, ref_genome = ref_genome, style = style)
         out_path
     })
 
     if (plot) {
-        cat("\n", "=="*10,"\n")
+        cat("\n", strrep("=", 20), "\n", sep = "")
         cat("  TFBS Enrichment Heatmap Visualization")
-        cat("\n", "=="*10,"\n")
+        cat("\n", strrep("=", 20), "\n", sep = "")
         TFBS_enrichment_heatmap(tsv_path = tsv_paths, label = names(row_grl), out_dir = out_dir)
     }
 }

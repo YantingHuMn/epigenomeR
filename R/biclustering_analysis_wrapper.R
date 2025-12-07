@@ -24,41 +24,41 @@
 biclustering_analysis_wrapper <- function(cm_path, out_dir, apply_filter = TRUE, row_km = 15, col_km = 3, apply_annotation = TRUE, ref_genome = "hg38", plot = TRUE) {
     # Step1: Merge all the count matrix files
     if (is.vector(cm_path) && length(cm_path) > 1) {
-        cat("\n", "=="*10,"\n")
+        cat("\n", strrep("=", 20), "\n", sep = "")
         cat("  Merge all count matrix files")
-        cat("\n", "=="*10,"\n")
+        cat("\n", strrep("=", 20), "\n", sep = "")
         merged_cm_path <- merge_count_matrices(cm_path = cm_path, out_dir = out_dir)
     } else {
         merged_cm_path <- cm_path
     }
 
     # Step2: Apply transformation
-    cat("\n","=="*10,"\n")
+    cat("\n", strrep("=", 20), "\n", sep = "")
     cat("  Apply transformation")
-    cat("\n", "=="*10,"\n")
+    cat("\n", strrep("=", 20), "\n", sep = "")
     transformed_cm_path <- apply_transformation(cm_path = merged_cm_path, out_dir = out_dir)
 
     # Step3: Filter highly variable regions
     if (apply_filter) {
         cat("\n","=="*10,"\n")
         cat("  Filter highly variable regions")
-        cat("\n", "=="*10,"\n")
+        cat("\n", strrep("=", 20), "\n", sep = "")
         f_cm_path <- detect_hvr(transformed_cm_path = transformed_cm_path, out_dir = out_dir, plot = plot)
     } else {
         f_cm_path <- transformed_cm_path
     }
 
     # Step3: Biclustering 
-    cat("\n","=="*10,"\n")
+    cat("\n", strrep("=", 20), "\n", sep = "")
     cat("  Biclustering")
-    cat("\n", "=="*10,"\n")
+    cat("\n", strrep("=", 20), "\n", sep = "")
     cluster_list <- biclustering(cm_path = f_cm_path, row_km = row_km, col_km = col_km, out_dir = out_dir, plot =  plot)
 
     # Step4: Biclustering annotation
     if (apply_annotation) {
-        cat("\n","=="*10,"\n")
+        cat("\n", strrep("=", 20), "\n", sep = "")
         cat("  Annotation")
-        cat("\n","=="*10,"\n")
+        cat("\n", strrep("=", 20), "\n", sep = "")
         biclustering_annotation_ccre_hmm(row_cluster_file_path = cluster_list$row_table, output_dir_path = out_dir, ref_genome = ref_genome)
         biclustering_TFBS_annotation(row_cluster_file_path = cluster_list$row_table, output_dir_path = out_dir, ref_genome = ref_genome)
     }
