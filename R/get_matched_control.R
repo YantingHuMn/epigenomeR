@@ -180,6 +180,7 @@ get_matched_control <- function(target_gr, ref_genome = "hg38", style = "UCSC", 
     chr_list <- GenomeInfoDb::standardChromosomes(bs)
     chr_list <- chr_list[!tolower(chr_list) %in% c("mt", "chrm", "m", "mito")]
     chr_sizes <- seqlengths(bs)[chr_list]
+    names(chr_sizes) <- chr_list
 
     genes_gr <- suppressMessages(genes(txdb))
     seqlevelsStyle(genes_gr) <- style
@@ -273,6 +274,6 @@ get_matched_control <- function(target_gr, ref_genome = "hg38", style = "UCSC", 
         return(GRanges())
     }
 
-    control_gr <- do.call(c, control_list)
+    control_gr <- unlist(GRangesList(control_list))
     return(control_gr)
 }

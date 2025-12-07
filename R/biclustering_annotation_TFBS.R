@@ -45,7 +45,7 @@ biclustering_annotation_TFBS <- function(row_cluster_file_path, out_dir = "./", 
         return(control_gr)
     })
     names(control_grl) <- names(row_grl)
-    control_gr <- do.call(c, control_grl)
+    control_gr <- unlist(control_grl, use.names = FALSE)
     # Eliminating bias caused by overlap
     control_gr_reduced <- reduce(control_gr)
     control_gr <- resize(control_gr_reduced, width = regions, fix = "center")
