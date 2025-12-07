@@ -52,7 +52,6 @@ Imports:
     preprocessCore,
     R.utils,
     readr,
-    RJSONIO,
     Rsamtools,
     rtracklayer,
     S4Vectors,

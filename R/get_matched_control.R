@@ -185,6 +185,7 @@ get_matched_control <- function(target_gr, ref_genome = "hg38", style = "UCSC", 
     genes_gr <- suppressMessages(genes(txdb))
     seqlevelsStyle(genes_gr) <- style
     genes_gr <- genes_gr[seqnames(genes_gr) %in% chr_list]
+    seqlevels(genes_gr) <- chr_list
     genes_gr <- sort(genes_gr)
 
     gene_lengths <- width(genes_gr)
