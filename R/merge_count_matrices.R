@@ -3,14 +3,14 @@
 #       with options for strict consistency checking or flexible merging with zero-filling.
 # Parameters: 
 #   cm_file_path: A vector of feather file paths to be merged.
-#   output_dir: Output file directory for the merged matrix. Default "./"
+#   out_dir: Output file directory for the merged matrix. Default "./"
 #   check_consistency: Logical. If TRUE, only keep rows (positions) and columns (samples) 
 #                      that exist in ALL input files. If FALSE, merge all rows and columns,
 #                      filling missing values with 0. Default is TRUE.
 # Output: A data frame containing the merged count matrix, with values summed across files.
 #         The merged matrix is also saved as a feather file.
 
-merge_count_matrices <- function(cm_file_path, output_dir = "./", check_consistency = TRUE) {
+merge_count_matrices <- function(cm_file_path, out_dir = "./", check_consistency = TRUE) {
     library(arrow)
     
     if (length(cm_file_path) == 0) {
@@ -78,7 +78,7 @@ merge_count_matrices <- function(cm_file_path, output_dir = "./", check_consiste
     }
     
     # Save
-    output_path <- file.path(output_dir, "Count_Matrix_merged.feather")
+    output_path <- file.path(out_dir, "Count_Matrix_merged.feather")
     message("\nSaving to: ", output_path)
     write_feather(merged_df, output_path)
     return(output_path)
